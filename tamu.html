@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Pengunjung (Enhanced)</title>
+    <title>Daftar Pengunjung (Autentikasi Reset)</title>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -79,8 +80,8 @@
         #exportExcelBtn:hover {
             background-color: #218838;
         }
-        /* Styling untuk tombol Clear Data (diganti jadi Reset Data) */
-        #resetDataBtn { /* ID baru */
+        /* Styling untuk tombol Reset Data */
+        #resetDataBtn {
             background-color: #ffc107; /* Warna kuning/oranye untuk Reset */
             color: #333;
             box-shadow: 0 2px 5px rgba(255,193,7,0.2);
@@ -223,12 +224,12 @@
         .modal-buttons .btn-no:hover {
             background-color: #5a6268;
         }
-        /* Styling untuk input text di dalam modal */
-        #magicWordInput {
+        /* Styling untuk input text di dalam modal (email/password) */
+        #resetEmailInput, #resetPasswordInput {
             width: calc(100% - 20px);
             padding: 10px;
             margin-top: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Kurangi margin-bottom agar lebih rapat */
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1em;
@@ -276,7 +277,8 @@
     <div id="confirmationModal" class="modal-overlay">
         <div class="modal-content">
             <p id="modalMessage"></p>
-            <input type="text" id="magicWordInput" placeholder="Masukkan kata sakti" style="display: none;">
+            <input type="email" id="resetEmailInput" placeholder="Email Admin" style="display: none;">
+            <input type="password" id="resetPasswordInput" placeholder="Password Admin" style="display: none;">
             <div class="modal-buttons">
                 <button class="btn-yes" id="modalConfirmYes">Ya</button>
                 <button class="btn-no" id="modalConfirmNo">Tidak</button>
@@ -285,20 +287,22 @@
     </div>
 
     <script>
-        // Konfigurasi Firebase Anda
+        // --- Konfigurasi Firebase Anda ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
-            authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
-            databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "absen-tamu-undangan-haflah",
-            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app",
-            messagingSenderId: "298086025599",
-            appId: "1:298086025599:web:818f9a8cd794f0f023724a",
-            measurementId: "G-P5E6HY528V"
+            apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE", // GANTI DENGAN API KEY ANDA
+            authDomain: "absen-tamu-undangan-haflah.firebaseapp.com", // GANTI DENGAN AUTH DOMAIN ANDA
+            databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app", // GANTI DENGAN DATABASE URL ANDA
+            projectId: "absen-tamu-undangan-haflah", // GANTI DENGAN PROJECT ID ANDA
+            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app", // GANTI DENGAN STORAGE BUCKET ANDA
+            messagingSenderId: "298086025599", // GANTI DENGAN MESSAGING SENDER ID ANDA
+            appId: "1:298086025599:web:818f9a8cd794f0f023724a", // GANTI DENGAN APP ID ANDA
+            measurementId: "G-P5E6HY528V" // GANTI DENGAN MEASUREMENT ID ANDA (opsional jika tidak pakai Analytics)
         };
+        // --- Akhir Konfigurasi Firebase Anda ---
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); // Inisialisasi Firebase Auth
         const database = firebase.database();
         const visitorsRef = database.ref('pengunjung'); 
 
@@ -314,33 +318,37 @@
 
         const confirmationModal = document.getElementById('confirmationModal');
         const modalMessage = document.getElementById('modalMessage');
-        const magicWordInput = document.getElementById('magicWordInput'); // New: Input for magic word
+        const resetEmailInput = document.getElementById('resetEmailInput'); // Input email untuk reset
+        const resetPasswordInput = document.getElementById('resetPasswordInput'); // Input password untuk reset
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
         let confirmationCallback = null;
-        let isResetOperation = false; // Flag to check if it's a reset operation
+        let requiresAuthForReset = false; // Flag untuk indikasi apakah perlu autentikasi untuk operasi saat ini
 
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
-         * @param {boolean} requireMagicWord - Apakah perlu input kata sakti.
+         * @param {boolean} authRequired - Apakah perlu input email/password untuk autentikasi.
          */
-        function showConfirmationModal(message, callback, requireMagicWord = false) {
+        function showConfirmationModal(message, callback, authRequired = false) {
             console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
             confirmationCallback = callback;
+            requiresAuthForReset = authRequired;
 
-            if (requireMagicWord) {
-                magicWordInput.style.display = 'block';
-                magicWordInput.value = ''; // Clear previous input
-                magicWordInput.focus();
-                isResetOperation = true;
+            if (authRequired) {
+                resetEmailInput.style.display = 'block';
+                resetPasswordInput.style.display = 'block';
+                resetEmailInput.value = ''; // Kosongkan input
+                resetPasswordInput.value = ''; // Kosongkan input
+                resetEmailInput.focus();
             } else {
-                magicWordInput.style.display = 'none';
-                isResetOperation = false;
+                resetEmailInput.style.display = 'none';
+                resetPasswordInput.style.display = 'none';
             }
 
+            // Hapus listener lama untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmYes.addEventListener('click', modalYesHandler);
             
@@ -356,35 +364,46 @@
         function hideConfirmationModal() {
             console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
+            // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
             confirmationCallback = null;
-            isResetOperation = false;
+            requiresAuthForReset = false;
         }
 
         // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
-        function modalYesHandler() {
+        async function modalYesHandler() { // Gunakan async karena akan ada operasi Promise (signInWithEmailAndPassword)
             console.log("DEBUG: Modal 'Ya' button diklik (handler).");
             const currentCallback = confirmationCallback; 
             
-            if (isResetOperation) {
-                const magicWord = magicWordInput.value.trim();
-                const expectedMagicWord = 'harisgantengbanget'; // The magic word
-                if (magicWord === expectedMagicWord) {
-                    hideConfirmationModal();
+            if (requiresAuthForReset) {
+                const email = resetEmailInput.value.trim();
+                const password = resetPasswordInput.value.trim();
+
+                if (!email || !password) {
+                    alert('Email dan password harus diisi untuk mereset data.');
+                    console.warn("DEBUG: Email atau password kosong.");
+                    return; // Jangan sembunyikan modal, biarkan user coba lagi
+                }
+
+                try {
+                    // Coba login dengan email dan password yang diberikan
+                    await auth.signInWithEmailAndPassword(email, password);
+                    console.log("DEBUG: Autentikasi berhasil.");
+                    hideConfirmationModal(); // Sembunyikan modal setelah autentikasi berhasil
                     if (currentCallback) {
-                        console.log("DEBUG: Memanggil confirmationCallback (Ya) dengan kata sakti benar.");
-                        currentCallback(true);
+                        currentCallback(true); // Lanjutkan dengan operasi reset data
                     }
-                } else {
-                    alert('Kata sakti salah! Reset dibatalkan.');
-                    console.warn("DEBUG: Kata sakti salah. Reset dibatalkan.");
-                    hideConfirmationModal(); // Hide the modal even if magic word is wrong
+                } catch (error) {
+                    console.error("DEBUG: Autentikasi gagal:", error);
+                    alert(`Autentikasi gagal: ${error.message}. Pastikan email dan password benar.`);
+                    // Jangan sembunyikan modal, biarkan user coba lagi atau batalkan
                     if (currentCallback) {
-                        currentCallback(false); // Indicate cancellation
+                        currentCallback(false); // Indikasikan pembatalan
                     }
                 }
             } else {
+                // Jika tidak memerlukan autentikasi, langsung panggil callback
                 hideConfirmationModal();
                 if (currentCallback) {
                     console.log("DEBUG: Memanggil confirmationCallback (Ya).");
@@ -404,26 +423,27 @@
         }
         // --- END HANDLER FUNCTIONS ---
 
-        // Initialize data listener immediately
+        // Inisialisasi listener data segera setelah script dimuat
         initializeDataListeners();
-        resetDataBtn.disabled = false;
+        resetDataBtn.disabled = false; // Aktifkan tombol reset secara default
 
         /**
          * Fungsi untuk menginisialisasi listener data Firebase.
          */
         function initializeDataListeners() {
-            visitorsRef.off('value'); 
+            visitorsRef.off('value'); // Lepaskan listener sebelumnya jika ada
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
                 if (visitorsObject) {
+                    // Konversi objek pengunjung menjadi array dan tambahkan isInitialLoad flag
                     allVisitorsData = Object.keys(visitorsObject).map(key => ({
                         id: key,
                         ...visitorsObject[key],
                         isInitialLoad: true
                     }));
                 }
-                updateVisitorList();
+                updateVisitorList(); // Perbarui daftar setelah data diterima
             }, (error) => {
                 console.error("Firebase Read Error:", error);
                 visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}.</td></tr>`;
@@ -434,7 +454,7 @@
          * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
          */
         function updateVisitorList() {
-            let filteredVisitors = [...allVisitorsData];
+            let filteredVisitors = [...allVisitorsData]; // Buat salinan array untuk filter/sort
 
             const searchTerm = searchFilterInput.value.toLowerCase().trim();
             if (searchTerm) {
@@ -471,6 +491,7 @@
                 return 0;
             });
 
+            // Perbarui indikator sortir di header tabel
             document.querySelectorAll('#visitor-list th').forEach(th => {
                 th.classList.remove('sort-asc', 'sort-desc');
                 if (th.dataset.sort === column) {
@@ -478,13 +499,13 @@
                 }
             });
 
-            visitorListBody.innerHTML = '';
+            visitorListBody.innerHTML = ''; // Kosongkan tabel sebelum mengisi ulang
             let visitorCount = 0;
 
             if (filteredVisitors.length === 0) {
                 const noDataRow = visitorListBody.insertRow();
                 const cell = noDataRow.insertCell(0);
-                cell.colSpan = 4;
+                cell.colSpan = 4; // Spanning semua kolom
                 cell.textContent = "Tidak ada data pengunjung yang cocok.";
                 cell.style.textAlign = "center";
                 cell.style.padding = "20px";
@@ -509,8 +530,10 @@
                 const date = new Date(visitorData.timestamp);
                 cellTime.textContent = date.toLocaleString('id-ID');
 
+                // Tambahkan kelas animasi jika bukan load awal
                 if (!visitorData.isInitialLoad) {
                      newRow.classList.add('new-visitor');
+                     // Hapus kelas animasi setelah beberapa detik
                      setTimeout(() => {
                          newRow.classList.remove('new-visitor');
                      }, 4000);
@@ -518,23 +541,26 @@
             });
         }
 
+        // Event listeners untuk filter dan sort
         searchFilterInput.addEventListener('keyup', updateVisitorList);
         sortBySelect.addEventListener('change', updateVisitorList);
 
+        // Event listener untuk sorting header tabel
         document.querySelectorAll('#visitor-list th[data-sort]').forEach(header => {
             header.addEventListener('click', () => {
                 const column = header.dataset.sort;
                 let order = 'asc';
 
+                // Jika kolom yang sama diklik, balik urutan
                 if (currentSortColumn === column) {
                     order = currentSortOrder === 'asc' ? 'desc' : 'asc';
                 }
 
-                sortBySelect.value = `${column}_${order}`;
+                sortBySelect.value = `${column}_${order}`; // Perbarui nilai select
                 currentSortColumn = column;
                 currentSortOrder = order;
 
-                updateVisitorList();
+                updateVisitorList(); // Perbarui daftar dengan urutan baru
             });
         });
 
@@ -545,18 +571,22 @@
             }
 
             const headers = ["No.", "Nama Pengunjung", "Kelas", "Waktu Scan"];
+            // Buat baris header CSV
             let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
 
             const rows = [];
+            // Ambil data dari tabel yang saat ini ditampilkan (setelah filter/sort)
             document.querySelectorAll('#visitor-list tbody tr').forEach(row => {
                 const cells = row.querySelectorAll('td');
                 if (cells.length === headers.length) {
+                    // Amankan string dengan mengutip dan menggandakan tanda kutip ganda
                     const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`);
                     rows.push(rowData.join(";"));
                 }
             });
             csvContent += rows.join("\n");
             
+            // Buat Blob dan unduh file menggunakan FileSaver.js
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             saveAs(blob, `Daftar_Pengunjung_${new Date().toLocaleDateString('id-ID')}.csv`);
         }
@@ -565,27 +595,32 @@
 
         /**
          * Fungsi untuk mereset/mengosongkan semua data pengunjung dari Firebase.
+         * Memerlukan autentikasi admin sebelum melakukan reset.
          */
         function resetVisitorsData() {
             console.log("DEBUG: Tombol Reset Data diklik."); 
 
-            showConfirmationModal("Untuk mengosongkan semua data pengunjung, ketik 'harisgantengbanget' di bawah dan klik 'Ya'. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
+            // Tampilkan modal yang meminta email dan password untuk autentikasi
+            showConfirmationModal("Untuk mengosongkan semua data pengunjung, masukkan email dan password akun admin Firebase Anda di bawah ini, lalu klik 'Ya'. Tindakan ini tidak dapat dibatalkan!", async (confirmed) => {
                 if (confirmed) {
-                    console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
-                    visitorsRef.set({})
+                    // Jika autentikasi berhasil (confirmed adalah true dari modalYesHandler), lanjutkan reset
+                    console.log("DEBUG: Autentikasi berhasil, mencoba mereset data di Firebase Realtime Database...");
+                    visitorsRef.set({}) // Mengatur node 'pengunjung' menjadi objek kosong
                         .then(() => {
                             console.log("DEBUG: Firebase Reset: Data berhasil direset di Realtime Database.");
+                            // Karena kita menggunakan listener 'value', allVisitorsData akan otomatis kosong
+                            // dan updateVisitorList() akan dipicu otomatis oleh Firebase.
                             showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
-                            setTimeout(() => hideConfirmationModal(), 2000); 
+                            setTimeout(() => hideConfirmationModal(), 2000); // Sembunyikan modal setelah 2 detik
                         })
                         .catch((error) => {
                             console.error("DEBUG: Firebase Reset Error:", error);
                             showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
                         });
                 } else {
-                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna atau kata sakti salah.");
+                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna atau autentikasi gagal.");
                 }
-            }, true); // Pass 'true' to require magic word
+            }, true); // Parameter 'true' ini menandakan bahwa autentikasi diperlukan untuk konfirmasi ini
         }
 
         resetDataBtn.addEventListener('click', resetVisitorsData);
