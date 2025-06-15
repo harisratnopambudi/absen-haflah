@@ -223,6 +223,17 @@
         .modal-buttons .btn-no:hover {
             background-color: #5a6268;
         }
+        /* Styling untuk input text di dalam modal */
+        #magicWordInput {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -246,7 +257,8 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="resetDataBtn">Reset Data Pengunjung</button> </div>
+        <button id="resetDataBtn">Reset Data Pengunjung</button>
+    </div>
 
     <table id="visitor-list">
         <thead>
@@ -264,6 +276,7 @@
     <div id="confirmationModal" class="modal-overlay">
         <div class="modal-content">
             <p id="modalMessage"></p>
+            <input type="text" id="magicWordInput" placeholder="Masukkan kata sakti" style="display: none;">
             <div class="modal-buttons">
                 <button class="btn-yes" id="modalConfirmYes">Ya</button>
                 <button class="btn-no" id="modalConfirmNo">Tidak</button>
@@ -293,7 +306,7 @@
         const searchFilterInput = document.getElementById('searchFilter');
         const sortBySelect = document.getElementById('sortBy');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const resetDataBtn = document.getElementById('resetDataBtn'); // ID baru untuk tombol reset
+        const resetDataBtn = document.getElementById('resetDataBtn');
 
         let allVisitorsData = [];
         let currentSortColumn = 'timestamp';
@@ -301,22 +314,33 @@
 
         const confirmationModal = document.getElementById('confirmationModal');
         const modalMessage = document.getElementById('modalMessage');
+        const magicWordInput = document.getElementById('magicWordInput'); // New: Input for magic word
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
         let confirmationCallback = null;
+        let isResetOperation = false; // Flag to check if it's a reset operation
 
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
+         * @param {boolean} requireMagicWord - Apakah perlu input kata sakti.
          */
-        function showConfirmationModal(message, callback) {
+        function showConfirmationModal(message, callback, requireMagicWord = false) {
             console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
-            confirmationCallback = callback; // Simpan callback di variabel global
+            confirmationCallback = callback;
 
-            // Pasang event listener menggunakan metode addEventListener
-            // Pastikan tidak ada duplikasi listener
+            if (requireMagicWord) {
+                magicWordInput.style.display = 'block';
+                magicWordInput.value = ''; // Clear previous input
+                magicWordInput.focus();
+                isResetOperation = true;
+            } else {
+                magicWordInput.style.display = 'none';
+                isResetOperation = false;
+            }
+
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmYes.addEventListener('click', modalYesHandler);
             
@@ -332,28 +356,43 @@
         function hideConfirmationModal() {
             console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
-            // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
-            confirmationCallback = null; // Set callback ke null setelah digunakan atau disembunyikan
+            confirmationCallback = null;
+            isResetOperation = false;
         }
 
         // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
-        // Fungsi ini akan dieksekusi saat tombol 'Ya' diklik
         function modalYesHandler() {
             console.log("DEBUG: Modal 'Ya' button diklik (handler).");
-            // Ambil callback sebelum memanggil hideConfirmationModal yang mungkin menyetelnya ke null
             const currentCallback = confirmationCallback; 
-            hideConfirmationModal(); // Sembunyikan modal
-            if (currentCallback) {
-                console.log("DEBUG: Memanggil confirmationCallback (Ya).");
-                currentCallback(true); // Panggil callback dengan true
+            
+            if (isResetOperation) {
+                const magicWord = magicWordInput.value.trim();
+                const expectedMagicWord = 'harisgantengbanget'; // The magic word
+                if (magicWord === expectedMagicWord) {
+                    hideConfirmationModal();
+                    if (currentCallback) {
+                        console.log("DEBUG: Memanggil confirmationCallback (Ya) dengan kata sakti benar.");
+                        currentCallback(true);
+                    }
+                } else {
+                    alert('Kata sakti salah! Reset dibatalkan.');
+                    console.warn("DEBUG: Kata sakti salah. Reset dibatalkan.");
+                    hideConfirmationModal(); // Hide the modal even if magic word is wrong
+                    if (currentCallback) {
+                        currentCallback(false); // Indicate cancellation
+                    }
+                }
             } else {
-                console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
+                hideConfirmationModal();
+                if (currentCallback) {
+                    console.log("DEBUG: Memanggil confirmationCallback (Ya).");
+                    currentCallback(true);
+                }
             }
         }
 
-        // Fungsi ini akan dieksekusi saat tombol 'Tidak' diklik
         function modalNoHandler() {
             console.log("DEBUG: Modal 'Tidak' button diklik (handler).");
             const currentCallback = confirmationCallback;
@@ -361,22 +400,18 @@
             if (currentCallback) {
                 console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
                 currentCallback(false);
-            } else {
-                console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
         }
         // --- END HANDLER FUNCTIONS ---
 
-        // Initialize data listener immediately without authentication
+        // Initialize data listener immediately
         initializeDataListeners();
-        resetDataBtn.disabled = false; // Enable the Reset button as login is not required
+        resetDataBtn.disabled = false;
 
         /**
          * Fungsi untuk menginisialisasi listener data Firebase.
-         * Dipanggil setelah pengguna terautentikasi atau langsung jika tidak ada autentikasi.
          */
         function initializeDataListeners() {
-            // Pastikan listener hanya di-attach sekali (visitorsRef.off() akan melepas listener sebelumnya)
             visitorsRef.off('value'); 
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
@@ -531,17 +566,15 @@
         /**
          * Fungsi untuk mereset/mengosongkan semua data pengunjung dari Firebase.
          */
-        function resetVisitorsData() { // Nama fungsi baru
+        function resetVisitorsData() {
             console.log("DEBUG: Tombol Reset Data diklik."); 
 
-            showConfirmationModal("Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
+            showConfirmationModal("Untuk mengosongkan semua data pengunjung, ketik 'harisgantengbanget' di bawah dan klik 'Ya'. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
                 if (confirmed) {
                     console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
-                    visitorsRef.set({}) // Mengatur node 'pengunjung' menjadi objek kosong
+                    visitorsRef.set({})
                         .then(() => {
                             console.log("DEBUG: Firebase Reset: Data berhasil direset di Realtime Database.");
-                            // Karena kita menggunakan listener 'value', allVisitorsData akan otomatis kosong
-                            // dan updateVisitorList() akan dipicu otomatis.
                             showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
                             setTimeout(() => hideConfirmationModal(), 2000); 
                         })
@@ -550,12 +583,12 @@
                             showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
                         });
                 } else {
-                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna.");
+                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna atau kata sakti salah.");
                 }
-            });
+            }, true); // Pass 'true' to require magic word
         }
 
-        resetDataBtn.addEventListener('click', resetVisitorsData); // Event listener baru
+        resetDataBtn.addEventListener('click', resetVisitorsData);
     </script>
 </body>
 </html>
