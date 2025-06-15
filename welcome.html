@@ -1,39 +1,165 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Welcome</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang Pengunjung!</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; background-color: #f0f0f0; }
-        h1 { font-size: 50px; color: green; }
+        /* Styling dasar untuk body */
+        body {
+            font-family: 'Inter', sans-serif; /* Menggunakan font Inter */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0f7fa; /* Warna latar belakang biru muda cerah */
+            color: #004d40; /* Warna teks hijau gelap */
+            text-align: center;
+            overflow: hidden; /* Pastikan tidak ada scroll */
+        }
+
+        /* Kontainer untuk pesan selamat datang */
+        #welcome-message-container {
+            background-color: #ffffff; /* Latar belakang putih untuk kontainer */
+            padding: 40px 60px; /* Padding yang luas */
+            border-radius: 20px; /* Sudut sangat membulat */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Bayangan yang lebih menonjol */
+            max-width: 90%; /* Lebar responsif */
+            opacity: 0; /* Awalnya tersembunyi untuk animasi */
+            transform: scale(0.9); /* Awalnya sedikit lebih kecil untuk animasi */
+            animation: fadeInScale 0.8s forwards; /* Animasi muncul */
+            transition: all 0.5s ease-in-out; /* Transisi untuk perubahan pesan */
+            min-height: 200px; /* Tinggi minimum agar konsisten */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Styling untuk pesan "Assalamualaikum" */
+        #greeting {
+            font-size: 2.5em; /* Ukuran font besar */
+            color: #00796b; /* Warna hijau kebiruan */
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        /* Styling untuk pesan "Selamat Datang" dan nama */
+        #welcome-text {
+            font-size: 3.5em; /* Ukuran font sangat besar untuk nama */
+            color: #004d40; /* Warna hijau gelap */
+            font-weight: 700;
+            line-height: 1.2;
+            word-wrap: break-word; /* Pecah kata panjang */
+            max-width: 100%; /* Pastikan tidak meluber */
+        }
+        
+        /* Animasi muncul (fade in dan scale up) */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Animasi fade-out (jika ingin pesan hilang setelah beberapa waktu) */
+        /* Anda bisa uncomment ini dan menambahkan logika di JS jika ingin pesan hilang */
+        /*
+        .fade-out {
+            animation: fadeOut 1s forwards;
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        */
+
+        /* Media queries untuk responsivitas */
+        @media (max-width: 768px) {
+            #welcome-message-container {
+                padding: 30px 40px;
+            }
+            #greeting {
+                font-size: 1.8em;
+            }
+            #welcome-text {
+                font-size: 2.5em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #welcome-message-container {
+                padding: 20px 30px;
+            }
+            #greeting {
+                font-size: 1.5em;
+            }
+            #welcome-text {
+                font-size: 2em;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <h1 id="welcome">Selamat Datang</h1>
+    <div id="welcome-message-container">
+        <div id="greeting">Assalamualaikum</div>
+        <div id="welcome-text">Selamat Datang Pengunjung</div>
+    </div>
 
     <script>
-        var firebaseConfig = {
+        // Konfigurasi Firebase Anda yang telah diperbarui
+        const firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
             databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "absen-tamu-undangan-haflah",
-            storageBucket: "absen-tamu-undangan-haflah.appspot.com",
+            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app",
             messagingSenderId: "298086025599",
-            appId: "1:298086025599:web:42f92cc7dd8cab7423724a"
+            appId: "1:298086025599:web:818f9a8cd794f0f023724a",
+            measurementId: "G-P5E6HY528V"
         };
 
+        // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
-        var db = firebase.database();
+        const database = firebase.database();
+        const visitorsRef = database.ref('pengunjung'); // Referensi ke node 'pengunjung'
 
-        db.ref('lastScan').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.nama) {
-                document.getElementById('welcome').innerText = 'Selamat Datang ' + data.nama;
-            }
+        const welcomeTextElement = document.getElementById('welcome-text');
+        const welcomeContainer = document.getElementById('welcome-message-container');
+
+        // Mendengarkan penambahan anak (child_added) ke node 'pengunjung'
+        visitorsRef.on('child_added', (snapshot) => {
+            const visitorData = snapshot.val(); // Mendapatkan data dari snapshot
+            const visitorName = visitorData.nama; // Mengambil nama pengunjung
+
+            // Perbarui teks selamat datang
+            welcomeTextElement.textContent = `Selamat Datang ${visitorName}`;
+
+            // Reset animasi atau tambahkan kelas untuk memicu ulang jika diperlukan
+            welcomeContainer.style.animation = 'none'; // Hapus animasi sebelumnya
+            welcomeContainer.offsetHeight; // Memaksa reflow browser
+            welcomeContainer.style.animation = null; // Terapkan kembali animasi
+
+            // Opsional: Jika Anda ingin pesan menghilang setelah beberapa detik,
+            // Anda bisa menambahkan logika di sini (saat ini tidak aktif)
+            // Contoh:
+            // setTimeout(() => {
+            //     welcomeTextElement.textContent = 'Selamat Datang Pengunjung'; // Kembali ke pesan default
+            // }, 5000); // Pesan akan tetap selama 5 detik
+        }, (error) => {
+            console.error("Error reading data from Firebase:", error);
+            welcomeTextElement.textContent = 'Error memuat nama pengunjung.';
         });
     </script>
-
 </body>
 </html>
