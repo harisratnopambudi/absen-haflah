@@ -322,6 +322,10 @@
             console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
             confirmationCallback = callback;
+            modalConfirmYes.removeEventListener('click', modalYesHandler); // Hapus listener lama jika ada
+            modalConfirmYes.addEventListener('click', modalYesHandler); // Tambahkan listener baru
+            modalConfirmNo.removeEventListener('click', modalNoHandler); // Hapus listener lama jika ada
+            modalConfirmNo.addEventListener('click', modalNoHandler); // Tambahkan listener baru
             confirmationModal.classList.add('visible');
         }
 
@@ -332,13 +336,16 @@
             console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
             confirmationCallback = null;
+            // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
+            modalConfirmYes.removeEventListener('click', modalYesHandler);
+            modalConfirmNo.removeEventListener('click', modalNoHandler);
         }
 
-        // --- DEBUGGING MODAL BUTTONS (EVENT LISTENERS) ---
-        // Penting: Pastikan ini benar-benar terpasang dan berfungsi
-        modalConfirmYes.addEventListener('click', () => {
-            console.log("DEBUG: Modal 'Ya' button diklik."); // Ini HARUS muncul di konsol saat diklik
-            debugger; // Kode akan berhenti di sini saat tombol 'Ya' diklik
+        // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
+        // Ini adalah fungsi terpisah agar kita bisa menambah/menghapus listener dengan benar
+        function modalYesHandler() {
+            console.log("DEBUG: Modal 'Ya' button diklik (handler).");
+            debugger; // Debugger akan berhenti di sini
             hideConfirmationModal();
             if (confirmationCallback) {
                 console.log("DEBUG: Memanggil confirmationCallback (Ya).");
@@ -346,11 +353,11 @@
             } else {
                 console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
             }
-        });
+        }
 
-        modalConfirmNo.addEventListener('click', () => {
-            console.log("DEBUG: Modal 'Tidak' button diklik."); // Ini HARUS muncul di konsol saat diklik
-            debugger; // Kode akan berhenti di sini saat tombol 'Tidak' diklik
+        function modalNoHandler() {
+            console.log("DEBUG: Modal 'Tidak' button diklik (handler).");
+            debugger; // Debugger akan berhenti di sini
             hideConfirmationModal();
             if (confirmationCallback) {
                 console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
@@ -358,8 +365,8 @@
             } else {
                 console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
-        });
-        // --- END DEBUGGING MODAL BUTTONS ---
+        }
+        // --- END HANDLER FUNCTIONS ---
 
 
         auth.onAuthStateChanged(user => {
