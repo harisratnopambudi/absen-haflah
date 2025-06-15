@@ -6,6 +6,7 @@
     <title>Daftar Pengunjung (Enhanced)</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> <!-- Pastikan auth SDK juga diimpor -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <!-- FileSaver.js untuk mengunduh file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -29,7 +30,7 @@
         /* Kontrol filter dan sort */
         .controls {
             display: flex;
-            flex-wrap: wrap; /* Memungkinkan wrap di layar kecil */
+            flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 20px;
             padding: 15px;
@@ -38,7 +39,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             width: 90%;
             max-width: 1000px;
-            justify-content: center; /* Pusat kontrol */
+            justify-content: center;
             align-items: center;
         }
         .controls label {
@@ -52,8 +53,8 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 1em;
-            flex-grow: 1; /* Memungkinkan input tumbuh */
-            max-width: 250px; /* Batasi lebar input */
+            flex-grow: 1;
+            max-width: 250px;
         }
         .controls button {
             background-color: #007bff;
@@ -75,7 +76,7 @@
         }
         /* Styling untuk tombol Export */
         #exportExcelBtn {
-            background-color: #28a745; /* Warna hijau untuk export */
+            background-color: #28a745;
             box-shadow: 0 2px 5px rgba(40,167,69,0.2);
         }
         #exportExcelBtn:hover {
@@ -83,7 +84,7 @@
         }
         /* Styling untuk tombol Clear Data */
         #clearDataBtn {
-            background-color: #dc3545; /* Warna merah untuk clear */
+            background-color: #dc3545;
             box-shadow: 0 2px 5px rgba(220,53,69,0.2);
         }
         #clearDataBtn:hover {
@@ -113,11 +114,11 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            cursor: pointer; /* Menunjukkan bahwa header bisa disortir */
+            cursor: pointer;
         }
         /* Indikator sortir */
-        #visitor-list th.sort-asc::after { content: ' \u25B2'; } /* Panah ke atas untuk ASC */
-        #visitor-list th.sort-desc::after { content: ' \u25BC'; } /* Panah ke bawah untuk DESC */
+        #visitor-list th.sort-asc::after { content: ' \u25B2'; }
+        #visitor-list th.sort-desc::after { content: ' \u25BC'; }
 
         /* Styling untuk baris genap pada tabel */
         #visitor-list tr:nth-child(even) {
@@ -156,7 +157,7 @@
             .controls select,
             .controls button {
                 width: 100%;
-                max-width: none; /* Hilangkan max-width pada mobile */
+                max-width: none;
             }
         }
 
@@ -167,11 +168,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); /* Overlay gelap */
+            background-color: rgba(0, 0, 0, 0.6);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000; /* Pastikan di atas elemen lain */
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -188,7 +189,7 @@
             text-align: center;
             max-width: 400px;
             width: 90%;
-            transform: translateY(-20px); /* Efek slide-in */
+            transform: translateY(-20px);
             transition: transform 0.3s ease;
         }
         .modal-overlay.visible .modal-content {
@@ -209,7 +210,7 @@
             transition: background-color 0.2s ease;
         }
         .modal-buttons .btn-yes {
-            background-color: #dc3545; /* Merah untuk Yes */
+            background-color: #dc3545;
             color: white;
             border: none;
         }
@@ -217,7 +218,7 @@
             background-color: #c82333;
         }
         .modal-buttons .btn-no {
-            background-color: #6c757d; /* Abu-abu untuk No */
+            background-color: #6c757d;
             color: white;
             border: none;
         }
@@ -247,7 +248,7 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="clearDataBtn">Clear Semua Data</button> <!-- Tombol baru untuk Clear Data -->
+        <button id="clearDataBtn">Clear Semua Data</button>
     </div>
 
     <table id="visitor-list">
@@ -290,6 +291,7 @@
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); // Dapatkan instance Firebase Auth
         const database = firebase.database();
         const visitorsRef = database.ref('pengunjung'); 
 
@@ -297,18 +299,17 @@
         const searchFilterInput = document.getElementById('searchFilter');
         const sortBySelect = document.getElementById('sortBy');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const clearDataBtn = document.getElementById('clearDataBtn'); // Dapatkan tombol Clear Data
+        const clearDataBtn = document.getElementById('clearDataBtn');
 
-        let allVisitorsData = []; // Menyimpan semua data pengunjung yang belum difilter/disortir
-        let currentSortColumn = 'timestamp'; // Kolom sortir aktif
-        let currentSortOrder = 'desc'; // Urutan sortir aktif (asc/desc)
+        let allVisitorsData = [];
+        let currentSortColumn = 'timestamp';
+        let currentSortOrder = 'desc';
 
-        // Elemen Modal Konfirmasi
         const confirmationModal = document.getElementById('confirmationModal');
         const modalMessage = document.getElementById('modalMessage');
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
-        let confirmationCallback = null; // Callback untuk menjalankan aksi setelah konfirmasi
+        let confirmationCallback = null;
 
         /**
          * Menampilkan modal konfirmasi kustom.
@@ -329,30 +330,70 @@
             confirmationCallback = null;
         }
 
-        // Event listener untuk tombol 'Ya' di modal
         modalConfirmYes.addEventListener('click', () => {
             hideConfirmationModal();
             if (confirmationCallback) {
-                confirmationCallback(true); // Panggil callback dengan true (konfirmasi)
+                confirmationCallback(true);
             }
         });
 
-        // Event listener untuk tombol 'Tidak' di modal
         modalConfirmNo.addEventListener('click', () => {
             hideConfirmationModal();
             if (confirmationCallback) {
-                confirmationCallback(false); // Panggil callback dengan false (batal)
+                confirmationCallback(false);
             }
         });
 
+        /**
+         * Fungsi yang dipanggil saat status autentikasi berubah.
+         * Ini akan memastikan data hanya dimuat/diakses jika pengguna sudah login.
+         */
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log("User logged in:", user.email);
+                // Pengguna sudah login, sekarang aman untuk memuat data dan mengaktifkan fitur tulis
+                initializeDataListeners(); // Panggil fungsi untuk mulai mendengarkan data Firebase
+                // Pastikan tombol clear aktif (meskipun defaultnya sudah aktif)
+                clearDataBtn.disabled = false; 
+            } else {
+                // Pengguna belum login, alihkan ke halaman login
+                console.log("No user logged in. Redirecting to login page.");
+                window.location.href = 'login.html';
+                // Nonaktifkan tombol clear jika belum login
+                clearDataBtn.disabled = true; 
+            }
+        });
+
+        /**
+         * Fungsi untuk menginisialisasi listener data Firebase.
+         * Dipanggil hanya setelah pengguna terautentikasi.
+         */
+        function initializeDataListeners() {
+            // Listener untuk data Firebase
+            visitorsRef.on('value', (snapshot) => {
+                const visitorsObject = snapshot.val();
+                allVisitorsData = [];
+                if (visitorsObject) {
+                    allVisitorsData = Object.keys(visitorsObject).map(key => ({
+                        id: key,
+                        ...visitorsObject[key],
+                        isInitialLoad: true
+                    }));
+                }
+                updateVisitorList();
+            }, (error) => {
+                console.error("Error reading data from Firebase:", error);
+                // Ini akan tampil jika izin baca ditolak (misal, belum login padahal aturan .read: auth != null)
+                visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}. Pastikan Anda sudah login.</td></tr>`;
+            });
+        }
 
         /**
          * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
          */
         function updateVisitorList() {
-            let filteredVisitors = [...allVisitorsData]; // Salin data asli
+            let filteredVisitors = [...allVisitorsData];
 
-            // 1. Terapkan Filter
             const searchTerm = searchFilterInput.value.toLowerCase().trim();
             if (searchTerm) {
                 filteredVisitors = filteredVisitors.filter(visitor => {
@@ -362,7 +403,6 @@
                 });
             }
 
-            // 2. Terapkan Sortir
             const sortOption = sortBySelect.value;
             const [column, order] = sortOption.split('_');
 
@@ -389,7 +429,6 @@
                 return 0;
             });
 
-            // Perbarui header tabel untuk menunjukkan status sortir
             document.querySelectorAll('#visitor-list th').forEach(th => {
                 th.classList.remove('sort-asc', 'sort-desc');
                 if (th.dataset.sort === column) {
@@ -397,15 +436,13 @@
                 }
             });
 
-
-            // 3. Render Tabel
-            visitorListBody.innerHTML = ''; // Bersihkan tabel
-            let visitorCount = 0; // Reset counter untuk nomor urut
+            visitorListBody.innerHTML = '';
+            let visitorCount = 0;
 
             if (filteredVisitors.length === 0) {
                 const noDataRow = visitorListBody.insertRow();
                 const cell = noDataRow.insertCell(0);
-                cell.colSpan = 4; // Spanning across all columns
+                cell.colSpan = 4;
                 cell.textContent = "Tidak ada data pengunjung yang cocok.";
                 cell.style.textAlign = "center";
                 cell.style.padding = "20px";
@@ -430,9 +467,7 @@
                 const date = new Date(visitorData.timestamp);
                 cellTime.textContent = date.toLocaleString('id-ID');
 
-                // Tambahkan kelas new-visitor hanya jika data baru masuk
-                // Ini akan menjaga animasi saat ada data baru dari scanner
-                if (!visitorData.isInitialLoad) { // Asumsi data yang baru datang tidak punya flag ini
+                if (!visitorData.isInitialLoad) {
                      newRow.classList.add('new-visitor');
                      setTimeout(() => {
                          newRow.classList.remove('new-visitor');
@@ -441,42 +476,18 @@
             });
         }
 
-        // Listener untuk data Firebase
-        visitorsRef.on('value', (snapshot) => {
-            const visitorsObject = snapshot.val();
-            allVisitorsData = [];
-            if (visitorsObject) {
-                // Konversi objek menjadi array dan tambahkan flag isInitialLoad
-                allVisitorsData = Object.keys(visitorsObject).map(key => ({
-                    id: key,
-                    ...visitorsObject[key],
-                    isInitialLoad: true // Menandai data yang dimuat pertama kali
-                }));
-            }
-            updateVisitorList(); // Panggil update saat data berubah
-        }, (error) => {
-            console.error("Error reading data from Firebase:", error);
-            visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}</td></tr>`;
-        });
-
-        // Event listener untuk filter pencarian
         searchFilterInput.addEventListener('keyup', updateVisitorList);
-
-        // Event listener untuk sortir dropdown
         sortBySelect.addEventListener('change', updateVisitorList);
 
-        // Event listener untuk sortir dari header tabel
         document.querySelectorAll('#visitor-list th[data-sort]').forEach(header => {
             header.addEventListener('click', () => {
                 const column = header.dataset.sort;
                 let order = 'asc';
 
-                // Jika kolom yang sama diklik lagi, ganti urutan
                 if (currentSortColumn === column) {
                     order = currentSortOrder === 'asc' ? 'desc' : 'asc';
                 }
 
-                // Perbarui nilai selectbox agar konsisten dengan klik header
                 sortBySelect.value = `${column}_${order}`;
                 currentSortColumn = column;
                 currentSortOrder = order;
@@ -485,37 +496,32 @@
             });
         });
 
-
         /**
          * Fungsi untuk mengekspor data tabel saat ini ke format CSV.
          */
         function exportToCsv() {
             if (allVisitorsData.length === 0) {
-                showConfirmationModal("Tidak ada data pengunjung untuk diekspor.");
+                showConfirmationModal("Tidak ada data pengunjung untuk diekspor.", () => {});
                 return;
             }
 
-            // Headers CSV
             const headers = ["No.", "Nama Pengunjung", "Kelas", "Waktu Scan"];
-            let csvContent = headers.map(header => `"${header}"`).join(";") + "\n"; // Gunakan semicolon sebagai delimiter, sertakan quotes untuk headers
+            let csvContent = headers.map(header => `"${header}"`).join(";") + "\n";
 
-            // Dapatkan data yang sedang difilter dan disortir untuk diekspor
             const rows = [];
             document.querySelectorAll('#visitor-list tbody tr').forEach(row => {
                 const cells = row.querySelectorAll('td');
-                if (cells.length === headers.length) { // Pastikan baris data, bukan pesan "Tidak ada data"
-                    const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`); // Escapement for quotes
+                if (cells.length === headers.length) {
+                    const rowData = Array.from(cells).map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`);
                     rows.push(rowData.join(";"));
                 }
             });
             csvContent += rows.join("\n");
             
-            // Buat Blob dan unduh
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             saveAs(blob, `Daftar_Pengunjung_${new Date().toLocaleDateString('id-ID')}.csv`);
         }
 
-        // Event listener untuk tombol export
         exportExcelBtn.addEventListener('click', exportToCsv);
 
         /**
@@ -526,27 +532,23 @@
                 if (confirmed) {
                     visitorsRef.remove()
                         .then(() => {
-                            // Data berhasil dihapus dari Firebase
-                            allVisitorsData = []; // Kosongkan data lokal
-                            updateVisitorList(); // Perbarui tampilan tabel
-                            // Tampilkan pesan sukses singkat menggunakan modal juga
+                            allVisitorsData = [];
+                            updateVisitorList();
                             showConfirmationModal("Semua data pengunjung berhasil dihapus!", () => {});
-                            // Sembunyikan modal setelah beberapa detik jika ini modal info
                             setTimeout(() => hideConfirmationModal(), 2000); 
                         })
                         .catch((error) => {
                             console.error("Error removing data:", error);
-                            showConfirmationModal(`Gagal menghapus data: ${error.message}`, () => {});
+                            if (error.code === "PERMISSION_DENIED") {
+                                showConfirmationModal(`Gagal menghapus data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
+                            } else {
+                                showConfirmationModal(`Gagal menghapus data: ${error.message}`, () => {});
+                            }
                         });
-                } else {
-                    // Pengguna membatalkan
-                    // showConfirmationModal("Penghapusan dibatalkan.", () => {});
-                    // setTimeout(() => hideConfirmationModal(), 1500); 
                 }
             });
         }
 
-        // Event listener untuk tombol Clear Data
         clearDataBtn.addEventListener('click', clearAllVisitorsData);
     </script>
 </body>
