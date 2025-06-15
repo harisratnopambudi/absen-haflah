@@ -197,14 +197,14 @@
 
         /* Styling untuk pesan idle */
         .idle-message-text {
-            font-size: 2.5em; /* Ukuran besar untuk pesan idle */
-            color: #a87e35; /* Warna emas */
-            font-weight: 600;
+            font-size: 3.5em; /* Ukuran besar untuk pesan idle */ /* Diperbesar */
+            color: #7b5b2a; /* Warna emas gelap, agar konsisten dengan greeting */ /* Diperbarui */
+            font-weight: 800; /* Dibuat lebih tebal */ /* Diperbarui */
             line-height: 1.5;
             padding: 20px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            /* background-color: rgba(255, 255, 255, 0.7); */ /* Dihapus background jika hanya SELAMAT DATANG */
+            /* border-radius: 15px; */ /* Dihapus border-radius */
+            /* box-shadow: 0 4px 10px rgba(0,0,0,0.1); */ /* Dihapus box-shadow */
         }
         
         /* Animasi muncul (fade in dan scale up) */
@@ -239,7 +239,7 @@
             #greeting { font-size: 2.5em; }
             .welcome-phrase { font-size: 1.8em; }
             #visitor-name-display { font-size: 3.8em; }
-            .idle-message-text { font-size: 2em; }
+            .idle-message-text { font-size: 2.5em; } /* Diperbesar responsif */
         }
 
         @media (max-width: 768px) {
@@ -254,7 +254,7 @@
             #greeting { font-size: 2.2em; }
             .welcome-phrase { font-size: 1.5em; }
             #visitor-name-display { font-size: 3em; }
-            .idle-message-text { font-size: 1.8em; }
+            .idle-message-text { font-size: 2em; } /* Diperbesar responsif */
             #footer-signature {
                 font-size: 0.8em;
                 bottom: 15px;
@@ -274,7 +274,7 @@
             #greeting { font-size: 1.5em; }
             .welcome-phrase { font-size: 1.2em; }
             #visitor-name-display { font-size: 2.2em; }
-            .idle-message-text { font-size: 1.5em; }
+            .idle-message-text { font-size: 1.5em; } /* Diperbesar responsif */
             #footer-signature {
                 font-size: 0.7em;
                 bottom: 10px;
@@ -306,7 +306,7 @@
                 <div id="visitor-name-display"></div>
             </div>
             <div id="static-idle-area" class="content-state">
-                <p class="idle-message-text">Silakan Pindai QR Code Anda</p>
+                <p class="idle-message-text">SELAMAT DATANG</p> <!-- TEKS DIUBAH DI SINI -->
             </div>
         </div>
         
