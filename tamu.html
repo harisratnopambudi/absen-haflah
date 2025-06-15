@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Pengunjung (Enhanced)</title>
+    <title>Daftar Pengunjung (Langkah Debugging)</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
@@ -172,7 +172,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 1000; /* Pastikan di atas elemen lain */
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -319,7 +319,7 @@
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
          */
         function showConfirmationModal(message, callback) {
-            console.log("showConfirmationModal dipanggil. Pesan:", message); // DEBUG
+            console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
             confirmationCallback = callback;
             confirmationModal.classList.add('visible');
@@ -329,31 +329,34 @@
          * Menyembunyikan modal konfirmasi kustom.
          */
         function hideConfirmationModal() {
-            console.log("hideConfirmationModal dipanggil."); // DEBUG
+            console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
             confirmationCallback = null;
         }
 
-        // --- DEBUGGING MODAL BUTTONS ---
+        // --- DEBUGGING MODAL BUTTONS (EVENT LISTENERS) ---
+        // Penting: Pastikan ini benar-benar terpasang dan berfungsi
         modalConfirmYes.addEventListener('click', () => {
-            console.log("Modal 'Ya' button diklik."); // DEBUG: Pastikan ini muncul
+            console.log("DEBUG: Modal 'Ya' button diklik."); // Ini HARUS muncul di konsol saat diklik
+            debugger; // Kode akan berhenti di sini saat tombol 'Ya' diklik
             hideConfirmationModal();
             if (confirmationCallback) {
-                console.log("Memanggil confirmationCallback (Ya)."); // DEBUG
+                console.log("DEBUG: Memanggil confirmationCallback (Ya).");
                 confirmationCallback(true);
             } else {
-                console.warn("confirmationCallback (Ya) tidak ditemukan."); // DEBUG
+                console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
             }
         });
 
         modalConfirmNo.addEventListener('click', () => {
-            console.log("Modal 'Tidak' button diklik."); // DEBUG: Pastikan ini muncul
+            console.log("DEBUG: Modal 'Tidak' button diklik."); // Ini HARUS muncul di konsol saat diklik
+            debugger; // Kode akan berhenti di sini saat tombol 'Tidak' diklik
             hideConfirmationModal();
             if (confirmationCallback) {
-                console.log("Memanggil confirmationCallback (Tidak)."); // DEBUG
+                console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
                 confirmationCallback(false);
             } else {
-                console.warn("confirmationCallback (Tidak) tidak ditemukan."); // DEBUG
+                console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
         });
         // --- END DEBUGGING MODAL BUTTONS ---
@@ -377,10 +380,6 @@
             }
         });
 
-        /**
-         * Fungsi untuk menginisialisasi listener data Firebase.
-         * Dipanggil hanya setelah pengguna terautentikasi.
-         */
         function initializeDataListeners() {
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
@@ -399,9 +398,6 @@
             });
         }
 
-        /**
-         * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
-         */
         function updateVisitorList() {
             let filteredVisitors = [...allVisitorsData];
 
@@ -536,10 +532,11 @@
          * Fungsi untuk menghapus semua data pengunjung dari Firebase.
          */
         function clearAllVisitorsData() {
-            console.log("Tombol Clear Data diklik."); // DEBUG: Log saat tombol diklik
+            console.log("DEBUG: Tombol Clear Data diklik.");
+            debugger; // DEBUG: Kode akan berhenti di sini saat tombol "Clear Semua Data" diklik
 
             if (!isUserAuthenticated) {
-                console.warn("Clear Data: Pengguna tidak terautentikasi."); // DEBUG
+                console.warn("DEBUG: Clear Data: Pengguna tidak terautentikasi.");
                 showConfirmationModal("Anda harus login untuk menghapus data. Mohon login terlebih dahulu.", () => {
                     window.location.href = 'login.html';
                 });
@@ -547,19 +544,20 @@
             }
 
             showConfirmationModal("Apakah Anda yakin ingin menghapus semua data pengunjung? Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
-                console.log("Modal Konfirmasi: Dikonfirmasi = ", confirmed); // DEBUG: Ini yang kita cari!
+                // Baris ini akan dieksekusi HANYA setelah mengklik "Ya" atau "Tidak" di modal
+                console.log("DEBUG: Modal Konfirmasi Callback dipanggil. Dikonfirmasi = ", confirmed); 
                 if (confirmed) {
-                    console.log("Mencoba menghapus data dari Firebase Realtime Database..."); // DEBUG
+                    console.log("DEBUG: Mencoba menghapus data dari Firebase Realtime Database...");
                     visitorsRef.remove()
                         .then(() => {
-                            console.log("Firebase Remove: Data berhasil dihapus dari Realtime Database."); // DEBUG
+                            console.log("DEBUG: Firebase Remove: Data berhasil dihapus dari Realtime Database.");
                             allVisitorsData = [];
                             updateVisitorList();
                             showConfirmationModal("Semua data pengunjung berhasil dihapus!", () => {});
                             setTimeout(() => hideConfirmationModal(), 2000); 
                         })
                         .catch((error) => {
-                            console.error("Firebase Remove Error:", error); // DEBUG: Log error lengkap
+                            console.error("DEBUG: Firebase Remove Error:", error);
                             if (error.code === "PERMISSION_DENIED") {
                                 showConfirmationModal(`Gagal menghapus data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
                             } else {
@@ -567,7 +565,7 @@
                             }
                         });
                 } else {
-                    console.log("Firebase Remove: Penghapusan dibatalkan oleh pengguna."); // DEBUG
+                    console.log("DEBUG: Firebase Remove: Penghapusan dibatalkan oleh pengguna.");
                 }
             });
         }
