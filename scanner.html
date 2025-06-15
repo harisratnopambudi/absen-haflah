@@ -56,6 +56,13 @@
             color: #dc3545; /* Warna merah */
             font-weight: 500;
         }
+        /* Styling untuk pesan sedang memindai */
+        .scanning-message {
+            margin-top: 10px;
+            font-size: 1em;
+            color: #555;
+            font-weight: 500;
+        }
         h1 {
             color: #0056b3; /* Warna judul lebih gelap */
             margin-bottom: 25px;
@@ -67,54 +74,98 @@
     <h1>Scan Barcode Pengunjung</h1>
     <div id="reader"></div>
     <div id="result">Hasil Scan: Belum ada</div>
-    <div id="status"></div>
+    <div id="status">Siap memindai...</div>
 
     <script>
-        // Konfigurasi Firebase Anda yang telah diperbarui dengan data terbaru
+        // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
             databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "absen-tamu-undangan-haflah",
-            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app", // Diperbarui
+            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app",
             messagingSenderId: "298086025599",
-            appId: "1:298086025599:web:818f9a8cd794f0f023724a", // Diperbarui
-            measurementId: "G-P5E6HY528V" // Baru ditambahkan
+            appId: "1:298086025599:web:818f9a8cd794f0f023724a",
+            measurementId: "G-P5E6HY528V"
         };
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        // Referensi ke node 'pengunjung' di Firebase Realtime Database
         const visitorsRef = database.ref('pengunjung'); 
+
+        const html5QrCode = new Html5Qrcode("reader");
+        let isScanning = false; // Flag untuk melacak apakah pemindai sedang aktif atau dalam cooldown
+
+        /**
+         * Fungsi untuk memulai pemindaian QR code.
+         */
+        function startScanner() {
+            if (isScanning) return; // Jika sudah dalam mode scanning, jangan mulai lagi
+            isScanning = true;
+            document.getElementById('status').className = 'scanning-message';
+            document.getElementById('status').textContent = 'Siap memindai...';
+            document.getElementById('result').textContent = 'Hasil Scan: Belum ada'; // Reset hasil
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // Memilih kamera belakang
+                {
+                    fps: 10,    // Frame per detik
+                    qrbox: { width: 250, height: 250 }  // Ukuran area pemindaian
+                },
+                onScanSuccess,
+                onScanFailure
+            ).catch((err) => {
+                document.getElementById('status').className = 'error-message';
+                document.getElementById('status').textContent = `Gagal memulai kamera: ${err.message}. Pastikan izin kamera diberikan.`;
+                console.error("Gagal memulai kamera:", err);
+                isScanning = false; // Reset flag jika gagal
+            });
+        }
 
         /**
          * Fungsi yang dipanggil ketika QR code berhasil dipindai.
-         * Mengirim nama pengunjung ke Firebase.
+         * Mengirim nama pengunjung ke Firebase dan menghentikan pemindai sementara.
          * @param {string} decodedText - Teks yang berhasil didekode dari QR code.
          * @param {object} decodedResult - Objek hasil lengkap dari library pemindai.
          */
         function onScanSuccess(decodedText, decodedResult) {
-            console.log(`Code matched = ${decodedText}`, decodedResult);
-            document.getElementById('result').textContent = `Hasil Scan: ${decodedText}`;
-            document.getElementById('status').className = 'status-message';
-            document.getElementById('status').textContent = 'Mengirim data...';
+            // Penting: Hentikan pemindai setelah scan berhasil untuk mencegah duplikasi
+            html5QrCode.stop().then(() => {
+                isScanning = false; // Set flag ke false karena pemindai berhenti
 
-            // Mengirim nama pengunjung dan timestamp ke Firebase
-            visitorsRef.push({
-                nama: decodedText,
-                timestamp: firebase.database.ServerValue.TIMESTAMP // Menggunakan waktu server Firebase
-            }).then(() => {
-                // Menampilkan pesan sukses dan menghilangkannya setelah beberapa detik
-                document.getElementById('status').textContent = 'Data berhasil dikirim!';
+                console.log(`Code matched = ${decodedText}`, decodedResult);
+                document.getElementById('result').textContent = `Hasil Scan: ${decodedText}`;
+                document.getElementById('status').className = 'status-message';
+                document.getElementById('status').textContent = 'Mengirim data...';
+
+                // Kirim nama pengunjung ke Firebase
+                visitorsRef.push({
+                    nama: decodedText,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    document.getElementById('status').textContent = 'Data berhasil dikirim! Silakan pindai barcode berikutnya...';
+                    // Mulai ulang pemindai setelah jeda 3 detik
+                    setTimeout(() => {
+                        startScanner();
+                    }, 3000); // Jeda 3 detik sebelum siap memindai lagi
+                }).catch((error) => {
+                    document.getElementById('status').className = 'error-message';
+                    document.getElementById('status').textContent = `Gagal mengirim data: ${error.message}. Coba lagi.`;
+                    console.error("Error writing to database", error);
+                    // Jika gagal kirim, coba mulai ulang pemindai setelah jeda
+                    setTimeout(() => {
+                        startScanner();
+                    }, 3000);
+                });
+            }).catch((err) => {
+                // Handle error jika gagal menghentikan pemindai (jarang terjadi)
+                console.error("Gagal menghentikan pemindai:", err);
+                isScanning = false;
+                // Tetap coba mulai ulang jika ada error saat stop
                 setTimeout(() => {
-                    document.getElementById('status').textContent = '';
-                }, 3000); // Pesan akan hilang setelah 3 detik
-            }).catch((error) => {
-                // Menampilkan pesan error jika pengiriman gagal
-                document.getElementById('status').className = 'error-message';
-                document.getElementById('status').textContent = `Gagal mengirim data: ${error.message}`;
-                console.error("Error writing to database", error);
+                    startScanner();
+                }, 3000);
             });
         }
 
@@ -123,27 +174,12 @@
          * @param {string} error - Pesan error.
          */
         function onScanFailure(error) {
-            // Error ini bisa sangat sering terjadi jika kamera terus mencari QR code.
             // Biarkan kosong atau tambahkan logika untuk menampilkan error penting saja.
-            // console.warn(`Code scan error = ${error}`); 
+            // console.warn(`Code scan error = ${error}`);
         }
 
-        // Inisialisasi Html5Qrcode dengan ID elemen 'reader'
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, // Memilih kamera belakang untuk pemindaian
-            {
-                fps: 10,    // Frame per detik untuk pemindaian
-                qrbox: { width: 250, height: 250 }  // Ukuran area pemindaian QR code
-            },
-            onScanSuccess, // Fungsi callback jika berhasil scan
-            onScanFailure  // Fungsi callback jika gagal scan
-        ).catch((err) => {
-            // Menampilkan pesan error jika kamera gagal dimulai
-            document.getElementById('status').className = 'error-message';
-            document.getElementById('status').textContent = `Gagal memulai kamera: ${err.message}. Pastikan izin kamera diberikan.`;
-            console.error("Gagal memulai kamera:", err);
-        });
+        // Mulai pemindai saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', startScanner);
     </script>
 </body>
 </html>
