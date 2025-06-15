@@ -35,7 +35,7 @@
         .main-frame-container {
             background-color: #f7f3e9; /* Warna dasar krem/emas terang */
             /* Menggunakan URL pattern yang diunggah ke repository Anda */
-            background-image: url('pattern.jpg'); /* GANTI 'pattern.jpg' DENGAN NAMA FILE ASLI ANDA */
+            background-image: url('pattern.png'); /* DIUBAH: Menggunakan pattern.png */
             background-repeat: repeat; /* Mengulang pattern */
             /* Border tebal warna emas tua */
             border: 15px solid #a87e35; 
@@ -96,11 +96,19 @@
             font-weight: 400;
             color: #a87e35;
             min-height: 1.2em; /* Mencegah CLS saat tanggal dimuat */
+            
+            /* STYLING BARU UNTUK BACKGROUND ROUNDED */
+            background-color: rgba(255, 255, 255, 0.7); /* Background putih transparan */
+            padding: 8px 15px; /* Padding di sekitar teks */
+            border-radius: 10px; /* Sudut membulat */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Sedikit bayangan */
+            display: inline-block; /* Agar padding dan background diterapkan dengan benar */
+            margin-top: 10px; /* Jarak dari sub judul */
         }
         
         /* Styling untuk logo */
         .logo-container {
-            margin: 0; /* Hilangkan margin karena sudah ada gap di parent */
+            margin: 15px 0 25px 0; /* Jarak atas, kiri/kanan, bawah */
             text-align: center;
         }
         .logo-container img {
