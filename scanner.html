@@ -16,7 +16,6 @@
     <div id="reader"></div>
 
     <script>
-        // Konfigurasi Firebase
         var firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
@@ -27,7 +26,6 @@
             appId: "1:298086025599:web:42f92cc7dd8cab7423724a"
         };
 
-        // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
@@ -36,16 +34,13 @@
 
             const scanRef = db.ref('absen/' + decodedText);
 
-            // Update status hadir dan waktu
             scanRef.update({
                 status: 'Hadir',
                 waktu: new Date().toLocaleString()
             }).then(() => {
-                // Ambil data tamu
                 scanRef.once('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data && data.nama) {
-                        // Update lastScan
                         db.ref('lastScan').set({
                             nama: data.nama
                         });
@@ -62,11 +57,8 @@
 
         var html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start(
-            { facingMode: "environment" }, // Gunakan kamera belakang
-            {
-                fps: 10, // Frame per second
-                qrbox: 250 // Ukuran area scan
-            },
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
             onScanSuccess
         ).catch(err => {
             console.error("Camera start error:", err);

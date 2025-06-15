@@ -1,28 +1,12 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selamat Datang</title>
-
-    <!-- Firebase -->
+    <title>Welcome</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            text-align: center;
-        }
-        h1 {
-            font-size: 48px;
-            color: #333;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; background-color: #f0f0f0; }
+        h1 { font-size: 50px; color: green; }
     </style>
 </head>
 <body>
@@ -30,29 +14,23 @@
     <h1 id="welcome">Selamat Datang</h1>
 
     <script>
-        // Firebase config
-        const firebaseConfig = {
+        var firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
             databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "absen-tamu-undangan-haflah",
             storageBucket: "absen-tamu-undangan-haflah.appspot.com",
             messagingSenderId: "298086025599",
-            appId: "1:298086025599:web:42f92cc7dd8cab7423724a",
-            measurementId: "G-6KVLTT6WC5"
+            appId: "1:298086025599:web:42f92cc7dd8cab7423724a"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        var db = firebase.database();
 
-        const welcomeElement = document.getElementById('welcome');
-
-        // Listen to the last absen data
         db.ref('lastScan').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.nama) {
-                welcomeElement.innerText = `Selamat Datang\n${data.nama}`;
+                document.getElementById('welcome').innerText = 'Selamat Datang ' + data.nama;
             }
         });
     </script>
