@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Pengunjung (Enhanced)</title>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
-    <!-- FileSaver.js untuk mengunduh file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         /* Styling dasar untuk body */
@@ -249,8 +246,7 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="resetDataBtn">Reset Data Pengunjung</button> <!-- ID dan teks baru -->
-    </div>
+        <button id="resetDataBtn">Reset Data Pengunjung</button> </div>
 
     <table id="visitor-list">
         <thead>
@@ -262,11 +258,9 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Data pengunjung akan ditambahkan di sini oleh JavaScript -->
-        </tbody>
+            </tbody>
     </table>
 
-    <!-- Modal Konfirmasi Kustom -->
     <div id="confirmationModal" class="modal-overlay">
         <div class="modal-content">
             <p id="modalMessage"></p>
@@ -292,7 +286,6 @@
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const database = firebase.database();
         const visitorsRef = database.ref('pengunjung'); 
 
@@ -311,8 +304,6 @@
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
         let confirmationCallback = null;
-
-        let isUserAuthenticated = false;
 
         /**
          * Menampilkan modal konfirmasi kustom.
@@ -376,27 +367,13 @@
         }
         // --- END HANDLER FUNCTIONS ---
 
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                console.log("Auth Status: User logged in as", user.email);
-                isUserAuthenticated = true;
-                initializeDataListeners();
-                resetDataBtn.disabled = false; // Aktifkan tombol Reset
-            } else {
-                console.log("Auth Status: No user logged in. Redirecting to login page.");
-                isUserAuthenticated = false;
-                window.location.href = 'login.html';
-                resetDataBtn.disabled = true; // Nonaktifkan tombol Reset
-                
-                allVisitorsData = [];
-                updateVisitorList();
-                visitorsRef.off('value'); // Hentikan mendengarkan perubahan Firebase
-            }
-        });
+        // Initialize data listener immediately without authentication
+        initializeDataListeners();
+        resetDataBtn.disabled = false; // Enable the Reset button as login is not required
 
         /**
          * Fungsi untuk menginisialisasi listener data Firebase.
-         * Dipanggil hanya setelah pengguna terautentikasi.
+         * Dipanggil setelah pengguna terautentikasi atau langsung jika tidak ada autentikasi.
          */
         function initializeDataListeners() {
             // Pastikan listener hanya di-attach sekali (visitorsRef.off() akan melepas listener sebelumnya)
@@ -414,7 +391,7 @@
                 updateVisitorList();
             }, (error) => {
                 console.error("Firebase Read Error:", error);
-                visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}. Pastikan Anda sudah login dan memiliki izin baca.</td></tr>`;
+                visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}.</td></tr>`;
             });
         }
 
@@ -557,14 +534,6 @@
         function resetVisitorsData() { // Nama fungsi baru
             console.log("DEBUG: Tombol Reset Data diklik."); 
 
-            if (!isUserAuthenticated) {
-                console.warn("DEBUG: Reset Data: Pengguna tidak terautentikasi.");
-                showConfirmationModal("Anda harus login untuk mereset data. Mohon login terlebih dahulu.", () => {
-                    window.location.href = 'login.html';
-                });
-                return;
-            }
-
             showConfirmationModal("Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
                 if (confirmed) {
                     console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
@@ -578,11 +547,7 @@
                         })
                         .catch((error) => {
                             console.error("DEBUG: Firebase Reset Error:", error);
-                            if (error.code === "PERMISSION_DENIED") {
-                                showConfirmationModal(`Gagal mereset data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
-                            } else {
-                                showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
-                            }
+                            showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
                         });
                 } else {
                     console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna.");
