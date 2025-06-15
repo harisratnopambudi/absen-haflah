@@ -201,40 +201,18 @@
             margin-bottom: 25px;
             color: #333;
         }
-        .modal-input-group {
-            margin-bottom: 20px; /* Jarak bawah untuk input password */
-            display: none; /* Awalnya tersembunyi */
-            flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
-        }
-        .modal-input-group label {
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-            font-size: 0.9em;
-        }
-        .modal-input-group input {
-            width: calc(100% - 20px); /* Penuh lebar dikurangi padding */
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1em;
-            box-sizing: border-box;
-        }
-        .modal-input-group .error-text {
-            color: #dc3545;
-            font-size: 0.8em;
-            margin-top: 5px;
-            min-height: 1em; /* Mencegah CLS */
-        }
+        /* Hapus styling untuk input password karena tidak lagi digunakan */
+        /* .modal-input-group { ... } */
+        /* .modal-input-group label { ... } */
+        /* .modal-input-group input { ... } */
+        /* .modal-input-group .error-text { ... } */
         .modal-buttons {
             display: flex;
             justify-content: center;
             gap: 15px;
         }
         .modal-buttons button {
-            margin: 0; /* Hilangkan margin individual karena sudah ada gap */
+            margin: 0;
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
@@ -243,7 +221,7 @@
             transition: background-color 0.2s ease;
         }
         .modal-buttons .btn-yes {
-            background-color: #dc3545; /* Merah untuk Yes */
+            background-color: #dc3545;
             color: white;
             border: none;
         }
@@ -251,7 +229,7 @@
             background-color: #c82333;
         }
         .modal-buttons .btn-no {
-            background-color: #6c757d; /* Abu-abu untuk No */
+            background-color: #6c757d;
             color: white;
             border: none;
         }
@@ -290,7 +268,7 @@
                 <th>No.</th>
                 <th data-sort="nama">Nama Pengunjung</th>
                 <th data-sort="kelas">Kelas</th>
-                <th>Waktu Scan</th> <!-- 'Waktu Scan' tidak perlu data-sort lagi karena kita akan mengurutkan secara manual dari Firebase -->
+                <th>Waktu Scan</th>
             </tr>
         </thead>
         <tbody>
@@ -303,12 +281,8 @@
         <div class="modal-content">
             <p id="modalMessage"></p>
             
-            <!-- Input Password Baru -->
-            <div id="passwordInputGroup" class="modal-input-group">
-                <label for="modalPassword">Password:</label>
-                <input type="password" id="modalPassword" placeholder="Masukkan password Anda">
-                <span id="passwordError" class="error-text"></span>
-            </div>
+            <!-- Input Password Dihapus dari sini -->
+            <!-- <div id="passwordInputGroup" class="modal-input-group">...</div> -->
 
             <div class="modal-buttons">
                 <button class="btn-yes" id="modalConfirmYes">Ya</button>
@@ -343,40 +317,32 @@
         const resetDataBtn = document.getElementById('resetDataBtn');
 
         let allVisitorsData = [];
-        let currentSortColumn = 'timestamp'; // Default sort for initial load
+        let currentSortColumn = 'timestamp';
         let currentSortOrder = 'desc';
 
         const confirmationModal = document.getElementById('confirmationModal');
         const modalMessage = document.getElementById('modalMessage');
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
-        // Elemen input password modal
-        const passwordInputGroup = document.getElementById('passwordInputGroup');
-        const modalPasswordInput = document.getElementById('modalPassword');
-        const passwordErrorSpan = document.getElementById('passwordError');
+        // Elemen password modal dihapus:
+        // const passwordInputGroup = document.getElementById('passwordInputGroup');
+        // const modalPasswordInput = document.getElementById('modalPassword');
+        // const passwordErrorSpan = document.getElementById('passwordError');
 
         let confirmationCallback = null;
-        let isUserAuthenticated = false; // Flag untuk status autentikasi
+        let isUserAuthenticated = false;
 
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
-         * @param {boolean} showPasswordInput - True jika input password harus ditampilkan.
+         * // Parameter showPasswordInput dihapus.
          */
-        function showConfirmationModal(message, callback, showPasswordInput = false) {
+        function showConfirmationModal(message, callback) {
             modalMessage.textContent = message;
             confirmationCallback = callback;
 
-            modalPasswordInput.value = ''; // Kosongkan input password
-            passwordErrorSpan.textContent = ''; // Kosongkan pesan error password
-
-            if (showPasswordInput) {
-                passwordInputGroup.style.display = 'flex'; // Tampilkan input password
-                modalPasswordInput.focus(); // Fokus ke input password
-            } else {
-                passwordInputGroup.style.display = 'none'; // Sembunyikan input password
-            }
+            // Logika untuk menampilkan/menyembunyikan passwordInputGroup dihapus.
 
             // Pasang event listener menggunakan metode addEventListener
             modalConfirmYes.removeEventListener('click', modalYesHandler);
@@ -394,58 +360,19 @@
         function hideConfirmationModal() {
             confirmationModal.classList.remove('visible');
             confirmationCallback = null;
-            passwordInputGroup.style.display = 'none'; // Pastikan input password disembunyikan
-            modalPasswordInput.value = ''; // Bersihkan password
-            passwordErrorSpan.textContent = ''; // Bersihkan error password
+            // Logika untuk menyembunyikan dan membersihkan passwordInputGroup dihapus.
 
             // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
         }
 
-        // Fungsi handler untuk tombol 'Ya' di modal
-        async function modalYesHandler() {
-            const isPasswordVisible = passwordInputGroup.style.display === 'flex';
-            
-            if (isPasswordVisible) {
-                const password = modalPasswordInput.value.trim();
-                if (!password) {
-                    passwordErrorSpan.textContent = "Password tidak boleh kosong.";
-                    return; // Hentikan eksekusi jika password kosong
-                }
-                
-                // Coba verifikasi password
-                try {
-                    const user = auth.currentUser;
-                    if (!user) {
-                        passwordErrorSpan.textContent = "Tidak ada pengguna yang login. Silakan login ulang.";
-                        return;
-                    }
-                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
-                    await user.reauthenticateWithCredential(credential);
-                    // Password berhasil diverifikasi, lanjutkan ke callback utama
-                    hideConfirmationModal();
-                    if (confirmationCallback) {
-                        confirmationCallback(true);
-                    }
-                } catch (error) {
-                    console.error("Password verification error:", error);
-                    let errorMessage = "Verifikasi password gagal. Coba lagi.";
-                    if (error.code === 'auth/wrong-password') {
-                        errorMessage = "Password salah.";
-                    } else if (error.code === 'auth/user-mismatch') {
-                        errorMessage = "Pengguna tidak cocok. Silakan login ulang.";
-                    } else if (error.code === 'auth/invalid-credential') {
-                        errorMessage = "Kredensial tidak valid.";
-                    }
-                    passwordErrorSpan.textContent = errorMessage;
-                }
-            } else {
-                // Jika input password tidak terlihat, langsung panggil callback
-                hideConfirmationModal();
-                if (confirmationCallback) {
-                    confirmationCallback(true);
-                }
+        // Fungsi handler untuk tombol 'Ya' di modal (kembali ke logika awal tanpa password)
+        function modalYesHandler() { // Menjadi synchronous lagi
+            // Logika verifikasi password dihapus
+            hideConfirmationModal();
+            if (confirmationCallback) {
+                confirmationCallback(true);
             }
         }
 
@@ -634,12 +561,12 @@
                 return;
             }
 
-            // Tampilkan modal dengan input password
+            // Tampilkan modal TANPA input password
             showConfirmationModal(
-                "Masukkan password Anda untuk mengkonfirmasi reset data. Tindakan ini tidak dapat dibatalkan!", 
+                "Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", 
                 (confirmed) => {
                     if (confirmed) {
-                        // Logika reset data akan berjalan DI SINI setelah password diverifikasi oleh modalYesHandler
+                        // Logika reset data akan berjalan DI SINI setelah konfirmasi
                         visitorsRef.set({})
                             .then(() => {
                                 allVisitorsData = [];
@@ -659,8 +586,8 @@
                         // Pengguna membatalkan reset
                         console.log("Firebase Reset: Reset dibatalkan oleh pengguna.");
                     }
-                },
-                true // Set ke true untuk menampilkan input password
+                }
+                // Parameter true untuk showPasswordInput dihapus
             );
         }
 
