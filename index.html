@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Absen Haflah</title>
+    <!-- Tailwind CSS CDN untuk styling sederhana -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom font if needed, otherwise Inter from Tailwind's default */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full text-center">
+        <h1 class="text-3xl font-bold text-blue-800 mb-6">Manajemen Absen Haflah</h1>
+        <p class="text-gray-600 mb-8">Pilih halaman yang ingin Anda akses:</p>
+        
+        <nav class="space-y-4">
+            <a href="barcode_generator.html" class="block bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                <span class="font-semibold">1. Pembuat Barcode Pengunjung</span>
+                <span class="block text-sm opacity-90">Buat QR Code untuk nama & kelas</span>
+            </a>
+            <a href="login.html" class="block bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                <span class="font-semibold">2. Halaman Login Panitia</span>
+                <span class="block text-sm opacity-90">Login untuk akses terproteksi</span>
+            </a>
+            <a href="scanner.html" class="block bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                <span class="font-semibold">3. Scanner Pengunjung</span>
+                <span class="block text-sm opacity-90">Aplikasi scan barcode di smartphone</span>
+            </a>
+            <a href="welcome.html" class="block bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                <span class="font-semibold">4. Tampilan Selamat Datang</span>
+                <span class="block text-sm opacity-90">Layar tampil nama pengunjung</span>
+            </a>
+            <a href="tamu.html" class="block bg-red-500 text-white py-3 px-6 rounded-lg hover:bg-red-600 transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                <span class="font-semibold">5. Daftar Pengunjung (Admin)</span>
+                <span class="block text-sm opacity-90">Manajemen data absensi</span>
+            </a>
+        </nav>
+    </div>
+</body>
+</html>
