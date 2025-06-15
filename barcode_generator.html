@@ -366,34 +366,23 @@
                 return;
             }
 
-            const { jsPDF } = window.jspdf; // Dapatkan jsPDF dari objek window
+            const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait', // Potrait A4
                 unit: 'mm',
                 format: 'a4'
             });
 
-            // Ukuran QR code di PDF (mm), dikurangi dari 50mm menjadi 35mm
-            const qrSize = 35; 
-            const textFontSize = 8; // Ukuran font teks untuk nama/kelas
-            const textLineHeight = 3; // Jarak antar baris teks
             const margin = 10; // Margin dari tepi halaman (mm)
-            const padding = 3; // Jarak antar QR code/teks
+            const qrSize = 35; // Ukuran QR code di PDF (mm)
+            const textFontSize = 10; // Ukuran font teks untuk nama/kelas
+            const textLineHeight = 4; // Jarak antar baris teks (mm)
+            const textPaddingBelowQR = 3; // Jarak antara QR code dan teks pertama
+            const textMaxWidth = qrSize; // Teks akan dibatasi selebar QR code
             
-            // Hitung lebar total satu item (QR + teks)
-            const itemWidth = qrSize; // QR code dan teks akan sejajar lebarnya
-            const itemHeight = qrSize + (textFontSize * 2) / doc.internal.scaleFactor + padding; // Tinggi QR + 2 baris teks + padding
-
-            // Kolom dan baris per halaman
-            const qrPerRow = Math.floor((doc.internal.pageSize.getWidth() - 2 * margin) / (itemWidth + padding));
-            const qrPerColumn = Math.floor((doc.internal.pageSize.getHeight() - 2 * margin) / (itemHeight + padding));
-            
-            // Pastikan ada setidaknya 1 item per halaman untuk menghindari pembagian dengan nol
-            if (qrPerRow === 0 || qrPerColumn === 0) {
-                alert("Halaman terlalu kecil atau QR terlalu besar untuk dimuat. Coba ukuran QR yang lebih kecil.");
-                return;
-            }
-            const totalQrPerPage = qrPerRow * qrPerColumn;
+            // Set font dan gaya untuk teks (Helvetica adalah font standar di jsPDF)
+            doc.setFont("helvetica", "bold"); // Nama
+            doc.setFontSize(textFontSize);
 
             let currentX = margin;
             let currentY = margin;
@@ -414,24 +403,33 @@
                         continue; 
                     }
 
-                    // Tambahkan halaman baru jika tidak cukup ruang di baris saat ini untuk item berikutnya
-                    // Atau jika ini QR pertama di halaman baru dan belum ada ruang
-                    if ((i > 0 && i % qrPerRow === 0) && (currentY + itemHeight + padding > doc.internal.pageSize.getHeight() - margin)) {
+                    // Pecah nama dan kelas jika terlalu panjang
+                    const nameLines = doc.splitTextToSize(item.name, textMaxWidth);
+                    const classLines = doc.splitTextToSize(item.kelas, textMaxWidth);
+
+                    // Hitung tinggi aktual untuk item ini (QR + padding + tinggi nama + tinggi kelas)
+                    const actualTextHeight = (nameLines.length + classLines.length) * textLineHeight;
+                    const currentItemFullHeight = qrSize + textPaddingBelowQR + actualTextHeight;
+                    
+                    // Logika pindah halaman atau baris baru
+                    // Jika QR saat ini tidak muat di baris ini, atau jika baris ini sudah penuh
+                    if ((currentX + qrSize > doc.internal.pageSize.getWidth() - margin) || (i > 0 && (i % Math.floor((doc.internal.pageSize.getWidth() - 2 * margin) / (qrSize + padding))) === 0 && (i % (Math.floor((doc.internal.pageSize.getWidth() - 2 * margin) / (qrSize + padding)) * Math.floor((doc.internal.pageSize.getHeight() - 2 * margin) / (qrSize + textPaddingBelowQR + (2 * textLineHeight) + padding))))) !== 0) {
+                         currentX = margin;
+                         currentY += (qrSize + textPaddingBelowQR + (2 * textLineHeight) + padding); // Gunakan tinggi rata-rata item sebelumnya + padding
+                         if (currentY + currentItemFullHeight > doc.internal.pageSize.getHeight() - margin) {
+                             doc.addPage();
+                             currentX = margin;
+                             currentY = margin;
+                             pageCount++;
+                         }
+                    }
+
+                    // Jika item tidak muat di halaman saat ini, tambahkan halaman baru
+                    if (currentY + currentItemFullHeight > doc.internal.pageSize.getHeight() - margin) {
                         doc.addPage();
                         currentX = margin;
                         currentY = margin;
                         pageCount++;
-                    } else if (currentX + itemWidth + padding > doc.internal.pageSize.getWidth() - margin) {
-                        // Jika elemen ini tidak muat di baris saat ini, pindah ke baris baru
-                        currentX = margin;
-                        currentY += itemHeight + padding;
-                        // Cek lagi jika pindah baris menyebabkan overflow halaman
-                        if (currentY + itemHeight + padding > doc.internal.pageSize.getHeight() - margin) {
-                            doc.addPage();
-                            currentX = margin;
-                            currentY = margin;
-                            pageCount++;
-                        }
                     }
 
                     // Dapatkan data URL gambar dari canvas
@@ -440,20 +438,27 @@
                     // Tambahkan gambar QR code ke PDF
                     doc.addImage(imgData, 'PNG', currentX, currentY, qrSize, qrSize);
 
-                    // Tambahkan teks nama dan kelas
-                    doc.setFontSize(textFontSize); 
-                    // Mengukur lebar teks agar bisa dipusatkan di bawah QR
-                    const nameWidth = doc.getStringUnitWidth(item.name) * textFontSize / doc.internal.scaleFactor;
-                    const classWidth = doc.getStringUnitWidth(item.kelas) * textFontSize / doc.internal.scaleFactor;
+                    // Posisikan teks di bawah QR code
+                    let textY = currentY + qrSize + textPaddingBelowQR;
                     
-                    const nameX = currentX + (qrSize - nameWidth) / 2;
-                    const classX = currentX + (qrSize - classWidth) / 2;
-
-                    doc.text(item.name, nameX, currentY + qrSize + textLineHeight); 
-                    doc.text(item.kelas, classX, currentY + qrSize + textLineHeight * 2 + 1); // +1 untuk sedikit spasi tambahan
+                    // Cetak nama (bold)
+                    doc.setFont("helvetica", "bold");
+                    for (const line of nameLines) {
+                        const lineWidth = doc.getStringUnitWidth(line) * textFontSize / doc.internal.scaleFactor;
+                        doc.text(line, currentX + (qrSize - lineWidth) / 2, textY); // Pusatkan teks
+                        textY += textLineHeight;
+                    }
+                    
+                    // Cetak kelas (normal/regular)
+                    doc.setFont("helvetica", "normal");
+                    for (const line of classLines) {
+                        const lineWidth = doc.getStringUnitWidth(line) * textFontSize / doc.internal.scaleFactor;
+                        doc.text(line, currentX + (qrSize - lineWidth) / 2, textY); // Pusatkan teks
+                        textY += textLineHeight;
+                    }
 
                     // Pindahkan posisi X untuk QR code berikutnya
-                    currentX += itemWidth + padding;
+                    currentX += qrSize + padding;
                 }
 
                 doc.save("qr_codes_siap_cetak.pdf");
