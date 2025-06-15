@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang</title>
+    <style>
+        body {
+            background-color: #fcebb6; /* Warna latar polos krem */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+        }
+
+        .welcome-card {
+            padding: 30px;
+            border: 5px solid #c59d5f;
+            border-radius: 20px;
+            background-color: #fff8e7;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+
+        .welcome-card h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .welcome-card h1 {
+            font-size: 40px;
+            color: #4b3f72;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="welcome-card">
+        <h2>Assalamualaikum</h2>
+        <p>Selamat datang orang tua Ananda</p>
+        <h1 id="guestName">Nama Tamu</h1>
+    </div>
+
+    <script>
+        // Ambil parameter nama dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const name = urlParams.get('name');
+
+        // Tampilkan nama
+        document.getElementById('guestName').innerText = name ? name : "Nama Tamu";
+
+        // Redirect otomatis setelah 5 detik kembali ke scanner
+        setTimeout(() => {
+            window.location.href = "scanner.html";
+        }, 5000);
+    </script>
+
+</body>
+</html>
