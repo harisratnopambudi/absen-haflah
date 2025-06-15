@@ -180,7 +180,7 @@
 
     <div class="container">
         <label for="visitorNames">Masukkan Nama dan Kelas Pengunjung (Format: Nama, Kelas - Satu entri per baris):</label>
-        <textarea id="visitorNames" placeholder="Contoh:&#10;Budi Santoso, 5A&#10;Ani Puspita, 6B&#10;Citra Dewi, 5A"></textarea>
+        <textarea id="visitorNames" placeholder="Contoh:&#10;Budi Santoso, 5A&#10;Ani Puspita&#10;Citra Dewi, 5A"></textarea>
         
         <div class="button-group">
             <button onclick="generateQRCodes()">Buat QR Code</button>
@@ -373,15 +373,20 @@
                 format: 'a4'
             });
 
+            // --- PARAMETER CETAK QR CODE ---
             const margin = 10; // Margin dari tepi halaman (mm)
             const qrSize = 35; // Ukuran QR code di PDF (mm)
-            const textFontSize = 10; // Ukuran font teks untuk nama/kelas
-            const textLineHeight = 4; // Jarak antar baris teks (mm)
+            const textFontSize = 8; // Ukuran font teks untuk nama/kelas
+            const textLineHeight = 3.5; // Jarak antar baris teks (mm), disesuaikan
             const textPaddingBelowQR = 3; // Jarak antara QR code dan teks pertama
-            const textMaxWidth = qrSize; // Teks akan dibatasi selebar QR code
-            
+            // Lebar maksimum teks di bawah QR code. Biarkan lebih lebar sedikit dari QR untuk nama panjang
+            const textMaxWidth = qrSize + 5; 
+            const paddingBetweenItems = 5; // Jarak antar item QR secara horizontal dan vertikal
+            // --- AKHIR PARAMETER ---
+
             // Set font dan gaya untuk teks (Helvetica adalah font standar di jsPDF)
-            doc.setFont("helvetica", "bold"); // Nama
+            // Default font for body text in PDF
+            doc.setFont("helvetica", "normal");
             doc.setFontSize(textFontSize);
 
             let currentX = margin;
@@ -402,35 +407,35 @@
                         console.warn(`Canvas tidak ditemukan untuk QR Code: ${item.name}`);
                         continue; 
                     }
-
-                    // Pecah nama dan kelas jika terlalu panjang
+                    
+                    // --- PEMECANGAN DAN PENGUKURAN TEKS ---
+                    // Pecah nama dan kelas jika terlalu panjang, sesuaikan dengan lebar maksimum teks
+                    doc.setFont("helvetica", "bold"); // Sementara set bold untuk nama
                     const nameLines = doc.splitTextToSize(item.name, textMaxWidth);
+                    
+                    doc.setFont("helvetica", "normal"); // Set normal untuk kelas
                     const classLines = doc.splitTextToSize(item.kelas, textMaxWidth);
 
-                    // Hitung tinggi aktual untuk item ini (QR + padding + tinggi nama + tinggi kelas)
+                    // Hitung tinggi aktual total untuk item ini (QR + padding + tinggi nama + tinggi kelas)
                     const actualTextHeight = (nameLines.length + classLines.length) * textLineHeight;
-                    const currentItemFullHeight = qrSize + textPaddingBelowQR + actualTextHeight;
-                    
-                    // Logika pindah halaman atau baris baru
-                    // Jika QR saat ini tidak muat di baris ini, atau jika baris ini sudah penuh
-                    if ((currentX + qrSize > doc.internal.pageSize.getWidth() - margin) || (i > 0 && (i % Math.floor((doc.internal.pageSize.getWidth() - 2 * margin) / (qrSize + padding))) === 0 && (i % (Math.floor((doc.internal.pageSize.getWidth() - 2 * margin) / (qrSize + padding)) * Math.floor((doc.internal.pageSize.getHeight() - 2 * margin) / (qrSize + textPaddingBelowQR + (2 * textLineHeight) + padding))))) !== 0) {
-                         currentX = margin;
-                         currentY += (qrSize + textPaddingBelowQR + (2 * textLineHeight) + padding); // Gunakan tinggi rata-rata item sebelumnya + padding
-                         if (currentY + currentItemFullHeight > doc.internal.pageSize.getHeight() - margin) {
-                             doc.addPage();
-                             currentX = margin;
-                             currentY = margin;
-                             pageCount++;
-                         }
+                    const currentItemTotalHeight = qrSize + textPaddingBelowQR + actualTextHeight;
+                    // --- AKHIR PEMECANGAN DAN PENGUKURAN TEKS ---
+
+                    // --- LOGIKA PAGINASI DAN POSISI ---
+                    // Cek apakah item ini akan muat di baris saat ini secara horizontal
+                    if (currentX + qrSize > doc.internal.pageSize.getWidth() - margin) {
+                        currentX = margin; // Pindah ke awal baris baru
+                        currentY += currentItemTotalHeight + paddingBetweenItems; // Pindah ke bawah
                     }
 
-                    // Jika item tidak muat di halaman saat ini, tambahkan halaman baru
-                    if (currentY + currentItemFullHeight > doc.internal.pageSize.getHeight() - margin) {
-                        doc.addPage();
-                        currentX = margin;
+                    // Cek apakah item ini (setelah potensi pindah baris) akan muat di halaman saat ini secara vertikal
+                    if (currentY + currentItemTotalHeight > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage(); // Tambah halaman baru
+                        currentX = margin; // Reset ke awal halaman baru
                         currentY = margin;
                         pageCount++;
                     }
+                    // --- AKHIR LOGIKA PAGINASI ---
 
                     // Dapatkan data URL gambar dari canvas
                     const imgData = canvas.toDataURL('image/png');
@@ -457,8 +462,8 @@
                         textY += textLineHeight;
                     }
 
-                    // Pindahkan posisi X untuk QR code berikutnya
-                    currentX += qrSize + padding;
+                    // Pindahkan posisi X untuk QR code berikutnya di baris yang sama
+                    currentX += qrSize + paddingBetweenItems;
                 }
 
                 doc.save("qr_codes_siap_cetak.pdf");
