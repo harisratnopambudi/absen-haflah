@@ -6,7 +6,7 @@
     <title>Scanner Pengunjung</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> <!-- Firebase Authentication SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script> <!-- Menggunakan html5-qrcode library untuk scan QR code -->
     <style>
@@ -72,6 +72,13 @@
             margin-top: 20px;
             font-weight: bold;
         }
+        /* Styling untuk pesan "Sudah Hadir" */
+        .already-present-message {
+            margin-top: 10px;
+            font-size: 1em;
+            color: #ff8c00; /* Warna oranye terang */
+            font-weight: 500;
+        }
         h1 {
             color: #0056b3; /* Warna judul lebih gelap */
             margin-bottom: 25px;
@@ -101,7 +108,7 @@
 
         // Inisialisasi Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(); // Dapatkan instance Firebase Auth
+        const auth = firebase.auth(); 
         const database = firebase.database();
         const visitorsRef = database.ref('pengunjung'); 
 
@@ -124,12 +131,10 @@
         // Fungsi yang dipanggil saat status autentikasi berubah
         auth.onAuthStateChanged(user => {
             if (user) {
-                // Pengguna sudah login, lanjutkan inisialisasi scanner
                 console.log("Auth Status: User logged in as", user.email);
                 showScannerElements(); // Tampilkan elemen scanner
                 startScanner(); // Mulai scanner
             } else {
-                // Pengguna belum login, alihkan ke halaman login
                 console.log("Auth Status: No user logged in. Redirecting to login page.");
                 window.location.href = 'login.html';
             }
@@ -146,10 +151,10 @@
             resultDiv.textContent = 'Hasil Scan: Belum ada';
 
             html5QrCode.start(
-                { facingMode: "environment" }, // Memilih kamera belakang
+                { facingMode: "environment" }, 
                 {
-                    fps: 10,    // Frame per detik
-                    qrbox: { width: 250, height: 250 }  // Ukuran area pemindaian
+                    fps: 10,    
+                    qrbox: { width: 250, height: 250 }  
                 },
                 onScanSuccess,
                 onScanFailure
@@ -162,13 +167,27 @@
         }
 
         /**
+         * Fungsi untuk membuat ID unik dari nama dan kelas.
+         * Digunakan sebagai kunci di Firebase untuk melacak kehadiran.
+         * @param {string} nama - Nama pengunjung.
+         * @param {string} kelas - Kelas pengunjung.
+         * @returns {string} ID unik yang dinormalisasi.
+         */
+        function createUniqueVisitorId(nama, kelas) {
+            // Ubah ke huruf kecil, ganti spasi dengan underscore, hapus karakter non-alfanumerik
+            const normalizedNama = nama.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            const normalizedKelas = kelas.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            return `${normalizedNama}_${normalizedKelas}`;
+        }
+
+        /**
          * Fungsi yang dipanggil ketika QR code berhasil dipindai.
-         * Mengirim nama pengunjung dan kelas ke Firebase dan menghentikan pemindai sementara.
+         * Memeriksa kehadiran, mengirim data, dan menghentikan pemindai sementara.
          * @param {string} decodedText - Teks yang berhasil didekode dari QR code (diharapkan JSON string).
          * @param {object} decodedResult - Objek hasil lengkap dari library pemindai.
          */
-        function onScanSuccess(decodedText, decodedResult) {
-            html5QrCode.stop().then(() => {
+        async function onScanSuccess(decodedText, decodedResult) {
+            html5QrCode.stop().then(async () => { // Gunakan async di sini
                 isScanning = false;
 
                 let visitorData = { nama: 'Tidak Diketahui', kelas: 'Tidak Diketahui' };
@@ -188,28 +207,41 @@
                     console.warn("Gagal parsing QR Code sebagai JSON, menggunakan teks asli sebagai nama.", e);
                 }
 
+                const uniqueVisitorId = createUniqueVisitorId(visitorData.nama, visitorData.kelas);
                 resultDiv.textContent = `Hasil Scan: ${visitorData.nama} (${visitorData.kelas})`;
-                statusDiv.className = 'status-message';
-                statusDiv.textContent = 'Mengirim data...';
+                statusDiv.className = 'scanning-message';
+                statusDiv.textContent = 'Memeriksa kehadiran...';
 
-                // Kirim nama dan kelas pengunjung ke Firebase
-                visitorsRef.push({
-                    nama: visitorData.nama,
-                    kelas: visitorData.kelas, 
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    statusDiv.textContent = 'Data berhasil dikirim! Silakan pindai barcode berikutnya...';
-                    setTimeout(() => {
-                        startScanner();
-                    }, 3000); 
-                }).catch((error) => {
+                try {
+                    // Cek apakah pengunjung sudah ada di database
+                    const snapshot = await visitorsRef.child(uniqueVisitorId).once('value');
+                    
+                    if (snapshot.exists() && snapshot.val().status === 'hadir') {
+                        // Pengunjung sudah hadir
+                        statusDiv.className = 'already-present-message';
+                        statusDiv.textContent = `${visitorData.nama} (${visitorData.kelas}) Sudah Hadir!`;
+                    } else {
+                        // Pengunjung belum hadir, simpan data kehadiran
+                        statusDiv.textContent = 'Mengirim data kehadiran...';
+                        await visitorsRef.child(uniqueVisitorId).set({
+                            nama: visitorData.nama,
+                            kelas: visitorData.kelas, 
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            status: 'hadir' // Menandai status kehadiran
+                        });
+                        statusDiv.className = 'status-message';
+                        statusDiv.textContent = 'Kehadiran berhasil dicatat! Silakan pindai barcode berikutnya...';
+                    }
+                } catch (error) {
                     statusDiv.className = 'error-message';
-                    statusDiv.textContent = `Gagal mengirim data: ${error.message}. Coba lagi.`;
-                    console.error("Firebase Write Error:", error); // Log error lengkap
+                    statusDiv.textContent = `Gagal memproses kehadiran: ${error.message}. Coba lagi.`;
+                    console.error("Firebase Process Error:", error); 
+                } finally {
+                    // Selalu mulai ulang pemindai setelah jeda
                     setTimeout(() => {
                         startScanner();
-                    }, 3000);
-                });
+                    }, 3000); // Jeda 3 detik
+                }
             }).catch((err) => {
                 console.error("Gagal menghentikan pemindai:", err);
                 isScanning = false;
