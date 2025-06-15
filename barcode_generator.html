@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator (Multiple)</title>
+    <!-- Library untuk menghasilkan QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Styling dasar untuk body */
+        body {
+            font-family: 'Inter', sans-serif; /* Menggunakan font Inter */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Mengubah ke flex-start untuk konten lebih panjang */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0; /* Tambahkan padding atas/bawah */
+            background-color: #f0f2f5; /* Warna latar belakang abu-abu terang */
+            color: #333;
+        }
+        /* Styling untuk judul utama */
+        h1 {
+            color: #0056b3; /* Warna biru gelap */
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        /* Kontainer utama untuk input dan QR code */
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 600px; /* Lebar maksimum yang sedikit lebih besar */
+            margin-bottom: 30px; /* Jarak bawah */
+        }
+        /* Styling untuk label */
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #555;
+            font-weight: 500;
+        }
+        /* Styling untuk textarea */
+        textarea {
+            width: calc(100% - 20px); /* Lebar penuh dikurangi padding */
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 1em;
+            box-sizing: border-box; /* Pastikan padding termasuk dalam lebar */
+            min-height: 150px; /* Tinggi minimum textarea */
+            resize: vertical; /* Hanya izinkan resize vertikal */
+        }
+        textarea:focus {
+            border-color: #007bff; /* Border biru saat fokus */
+            outline: none; /* Hilangkan outline default */
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        /* Styling untuk tombol generate */
+        button {
+            background-color: #28a745; /* Warna hijau */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+        }
+        button:hover {
+            background-color: #218838; /* Warna hijau lebih gelap saat hover */
+            transform: translateY(-2px); /* Sedikit naik saat hover */
+        }
+        button:active {
+            transform: translateY(0); /* Kembali ke posisi semula saat diklik */
+        }
+        /* Styling untuk area menampilkan banyak QR code */
+        #qrcodes-output {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap; /* Izinkan QR code untuk wrap ke baris berikutnya */
+            justify-content: center;
+            gap: 20px; /* Jarak antar QR code */
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 900px; /* Lebar maksimum untuk area output */
+        }
+        /* Styling untuk setiap kontainer QR code individual */
+        .qrcode-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #eee; /* Border tipis */
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9; /* Background terang */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .qrcode-item p {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #444;
+            text-align: center;
+            word-break: break-word; /* Pecah kata panjang */
+        }
+        /* Styling untuk canvas di dalam QR code */
+        .qrcode-item canvas {
+            display: block; /* Hilangkan margin ekstra dari inline element */
+        }
+        /* Styling untuk instruksi */
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.5;
+            text-align: left; /* Instruksi lebih baik rata kiri */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pembuat QR Code Pengunjung (Banyak Nama)</h1>
+
+    <div class="container">
+        <label for="visitorNames">Masukkan Nama Pengunjung (Satu nama per baris):</label>
+        <textarea id="visitorNames" placeholder="Contoh:&#10;Budi Santoso&#10;Ani Puspita&#10;Citra Dewi"></textarea>
+        <button onclick="generateQRCodes()">Buat QR Code</button>
+
+        <div class="instructions">
+            <p><strong>Cara Penggunaan:</strong></p>
+            <ol>
+                <li>Masukkan daftar nama pengunjung ke kolom area teks di atas, **satu nama per baris**.</li>
+                <li>Klik tombol "Buat QR Code".</li>
+                <li>QR Code untuk setiap nama akan muncul di bawah. Anda bisa menampilkan ini di layar atau mencetaknya untuk discan.</li>
+                <li>Gunakan aplikasi "Scanner Pengunjung" (`scanner.html`) di smartphone panitia untuk memindai setiap QR Code ini.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="qrcodes-output">
+        <!-- QR code akan muncul di sini -->
+    </div>
+
+    <script>
+        /**
+         * Fungsi untuk menghasilkan banyak QR Code dari input daftar nama pengunjung.
+         */
+        function generateQRCodes() {
+            const visitorNamesInput = document.getElementById('visitorNames');
+            const visitorNamesText = visitorNamesInput.value.trim(); // Ambil nilai dan hilangkan spasi di awal/akhir
+
+            const outputDiv = document.getElementById('qrcodes-output');
+            outputDiv.innerHTML = ''; // Bersihkan area output sebelum membuat yang baru
+
+            if (visitorNamesText) {
+                // Pisahkan nama-nama berdasarkan baris baru dan filter baris kosong
+                const names = visitorNamesText.split('\n').map(name => name.trim()).filter(name => name !== '');
+
+                if (names.length === 0) {
+                    alert("Mohon masukkan setidaknya satu nama pengunjung.");
+                    return;
+                }
+
+                names.forEach((name, index) => {
+                    // Buat kontainer untuk setiap QR code dan namanya
+                    const qrcodeItemDiv = document.createElement('div');
+                    qrcodeItemDiv.className = 'qrcode-item';
+
+                    const qrcodeDivId = `qrcode-${index}`; // ID unik untuk setiap div QR code
+                    const qrcodeContainer = document.createElement('div');
+                    qrcodeContainer.id = qrcodeDivId;
+
+                    const nameParagraph = document.createElement('p');
+                    nameParagraph.textContent = name;
+
+                    qrcodeItemDiv.appendChild(qrcodeContainer);
+                    qrcodeItemDiv.appendChild(nameParagraph);
+                    outputDiv.appendChild(qrcodeItemDiv);
+
+                    // Buat QR code baru di dalam kontainer uniknya
+                    new QRCode(document.getElementById(qrcodeDivId), {
+                        text: name,
+                        width: 150, // Ukuran QR code lebih kecil agar muat banyak
+                        height: 150,
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                });
+            } else {
+                alert("Mohon masukkan setidaknya satu nama pengunjung terlebih dahulu!");
+            }
+        }
+    </script>
+</body>
+</html>

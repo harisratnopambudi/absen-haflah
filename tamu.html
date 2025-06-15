@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Pengunjung</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <style>
+        /* Styling dasar untuk body */
+        body {
+            font-family: 'Inter', sans-serif; /* Menggunakan font Inter */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        /* Styling untuk judul utama */
+        h1 {
+            color: #0056b3; /* Warna biru gelap */
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        /* Styling untuk tabel daftar pengunjung */
+        #visitor-list {
+            width: 90%; /* Lebar responsif */
+            max-width: 900px; /* Lebar maksimum */
+            margin-top: 20px;
+            border-collapse: collapse; /* Hilangkan spasi antar border sel */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15); /* Shadow yang lebih menonjol */
+            border-radius: 10px; /* Sudut membulat untuk tabel */
+            overflow: hidden; /* Pastikan shadow dan border-radius terlihat */
+        }
+        /* Styling untuk header tabel (th) dan sel data (td) */
+        #visitor-list th, #visitor-list td {
+            border: 1px solid #e0e0e0; /* Border abu-abu terang */
+            padding: 12px 15px; /* Padding lebih besar */
+            text-align: left;
+        }
+        /* Styling khusus untuk header tabel */
+        #visitor-list th {
+            background-color: #007bff; /* Background biru terang */
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        /* Styling untuk baris genap pada tabel */
+        #visitor-list tr:nth-child(even) {
+            background-color: #f2f7fc; /* Warna biru muda sangat terang */
+        }
+        /* Styling untuk baris ganjil pada tabel */
+        #visitor-list tr:nth-child(odd) {
+            background-color: #ffffff; /* Warna putih */
+        }
+        /* Efek hover pada baris tabel */
+        #visitor-list tr:hover {
+            background-color: #e9f5ff; /* Warna biru lebih terang saat hover */
+            cursor: default;
+        }
+        /* Styling untuk pengunjung baru yang ditambahkan */
+        .new-visitor {
+            background-color: #d4edda !important; /* Warna hijau muda yang lebih menonjol */
+            animation: fadeInOut 4s forwards; /* Animasi fade in dan fade out */
+        }
+
+        /* Keyframes untuk animasi fade in dan fade out */
+        @keyframes fadeInOut {
+            0% { background-color: #d4edda; opacity: 0.5; } /* Mulai dengan warna hijau dan sedikit transparan */
+            20% { background-color: #d4edda; opacity: 1; }  /* Penuh warna dan tidak transparan */
+            80% { background-color: #d4edda; opacity: 1; }
+            100% { background-color: #f9f9f9; opacity: 1; } /* Kembali ke warna latar belakang normal */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Daftar Pengunjung</h1>
+    <table id="visitor-list">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Nama Pengunjung</th>
+                <th>Waktu Scan</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data pengunjung akan ditambahkan di sini oleh JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        // Konfigurasi Firebase Anda yang telah diperbarui dengan data terbaru
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
+            authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
+            databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "absen-tamu-undangan-haflah",
+            storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app", // Diperbarui
+            messagingSenderId: "298086025599",
+            appId: "1:298086025599:web:818f9a8cd794f0f023724a", // Diperbarui
+            measurementId: "G-P5E6HY528V" // Baru ditambahkan
+        };
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        // Referensi ke node 'pengunjung' di Firebase Realtime Database
+        const visitorsRef = database.ref('pengunjung'); 
+
+        const visitorListBody = document.querySelector('#visitor-list tbody');
+        let visitorCount = 0; // Untuk melacak nomor urut pengunjung
+
+        /**
+         * Mengurutkan pengunjung berdasarkan timestamp dari yang terbaru.
+         * @param {Array} visitorsArray - Array objek pengunjung.
+         * @returns {Array} Array pengunjung yang sudah diurutkan.
+         */
+        function sortVisitorsByTimestamp(visitorsArray) {
+            return visitorsArray.sort((a, b) => b.timestamp - a.timestamp);
+        }
+
+        /**
+         * Memperbarui seluruh daftar pengunjung di tabel HTML.
+         * Ini akan dipanggil setiap kali ada perubahan pada data pengunjung.
+         * @param {object} visitorsObject - Objek data pengunjung dari Firebase.
+         */
+        function updateVisitorList(visitorsObject) {
+            visitorListBody.innerHTML = ''; // Hapus semua baris yang ada
+            visitorCount = 0; // Reset counter
+
+            if (!visitorsObject) return; // Jika tidak ada data, keluar
+
+            // Konversi objek pengunjung menjadi array dan urutkan
+            const visitorsArray = Object.keys(visitorsObject).map(key => ({
+                id: key,
+                ...visitorsObject[key]
+            }));
+            const sortedVisitors = sortVisitorsByTimestamp(visitorsArray);
+
+            // Tambahkan setiap pengunjung ke tabel
+            sortedVisitors.forEach(visitorData => {
+                visitorCount++; // Tambah nomor urut untuk setiap baris
+
+                const newRow = visitorListBody.insertRow(); // Masukkan baris baru di akhir
+                
+                const cellNo = newRow.insertCell(0);
+                const cellName = newRow.insertCell(1);
+                const cellTime = newRow.insertCell(2);
+
+                cellNo.textContent = visitorCount;
+                cellName.textContent = visitorData.nama;
+
+                // Format timestamp menjadi tanggal dan waktu yang mudah dibaca
+                const date = new Date(visitorData.timestamp);
+                cellTime.textContent = date.toLocaleString('id-ID'); // Format ke bahasa Indonesia
+
+                // Tambahkan kelas 'new-visitor' untuk entri yang baru ditambahkan (atau yang pertama dimuat)
+                // Ini akan memberikan efek visual saat data pertama kali dimuat atau diperbarui
+                // Anda bisa menyesuaikan logika ini jika hanya ingin efek untuk data yang benar-benar baru
+                // Misalnya, membandingkan dengan ID terakhir yang ditambahkan.
+                setTimeout(() => {
+                    newRow.classList.remove('new-visitor');
+                }, 4000); // Sesuaikan dengan durasi animasi di CSS
+            });
+        }
+
+        // Mendengarkan data secara keseluruhan dari Firebase ('value' event)
+        // Ini akan mengambil semua data yang ada saat pertama kali dan setiap kali ada perubahan data
+        visitorsRef.on('value', (snapshot) => {
+            const visitorsObject = snapshot.val();
+            updateVisitorList(visitorsObject);
+        }, (error) => {
+            console.error("Error reading data from Firebase:", error);
+            // Anda bisa menampilkan pesan error di UI jika perlu
+        });
+    </script>
+</body>
+</html>
