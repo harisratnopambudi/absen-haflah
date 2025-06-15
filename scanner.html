@@ -101,17 +101,17 @@
          * Fungsi untuk memulai pemindaian QR code.
          */
         function startScanner() {
-            if (isScanning) return; // Jika sudah dalam mode scanning, jangan mulai lagi
+            if (isScanning) return;
             isScanning = true;
             document.getElementById('status').className = 'scanning-message';
             document.getElementById('status').textContent = 'Siap memindai...';
-            document.getElementById('result').textContent = 'Hasil Scan: Belum ada'; // Reset hasil
+            document.getElementById('result').textContent = 'Hasil Scan: Belum ada';
 
             html5QrCode.start(
-                { facingMode: "environment" }, // Memilih kamera belakang
+                { facingMode: "environment" },
                 {
-                    fps: 10,    // Frame per detik
-                    qrbox: { width: 250, height: 250 }  // Ukuran area pemindaian
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
                 },
                 onScanSuccess,
                 onScanFailure
@@ -119,66 +119,75 @@
                 document.getElementById('status').className = 'error-message';
                 document.getElementById('status').textContent = `Gagal memulai kamera: ${err.message}. Pastikan izin kamera diberikan.`;
                 console.error("Gagal memulai kamera:", err);
-                isScanning = false; // Reset flag jika gagal
+                isScanning = false;
             });
         }
 
         /**
          * Fungsi yang dipanggil ketika QR code berhasil dipindai.
-         * Mengirim nama pengunjung ke Firebase dan menghentikan pemindai sementara.
-         * @param {string} decodedText - Teks yang berhasil didekode dari QR code.
+         * Mengirim nama pengunjung dan kelas ke Firebase dan menghentikan pemindai sementara.
+         * @param {string} decodedText - Teks yang berhasil didekode dari QR code (diharapkan JSON string).
          * @param {object} decodedResult - Objek hasil lengkap dari library pemindai.
          */
         function onScanSuccess(decodedText, decodedResult) {
-            // Penting: Hentikan pemindai setelah scan berhasil untuk mencegah duplikasi
             html5QrCode.stop().then(() => {
-                isScanning = false; // Set flag ke false karena pemindai berhenti
+                isScanning = false;
 
-                console.log(`Code matched = ${decodedText}`, decodedResult);
-                document.getElementById('result').textContent = `Hasil Scan: ${decodedText}`;
+                let visitorData = { nama: 'Tidak Diketahui', kelas: 'Tidak Diketahui' };
+                try {
+                    // Coba parse decodedText sebagai JSON
+                    const parsedData = JSON.parse(decodedText);
+                    if (parsedData && typeof parsedData === 'object' && parsedData.nama) {
+                        visitorData.nama = parsedData.nama;
+                        visitorData.kelas = parsedData.kelas || 'Tidak Diketahui'; // Ambil kelas, default jika tidak ada
+                    } else {
+                        // Jika bukan JSON atau format tidak sesuai, gunakan teks asli sebagai nama
+                        visitorData.nama = decodedText;
+                        visitorData.kelas = 'Tidak Diketahui'; // Set kelas ke default
+                        console.warn("QR Code tidak dalam format JSON yang diharapkan, menggunakan teks asli sebagai nama.");
+                    }
+                } catch (e) {
+                    // Jika gagal parse JSON, asumsikan teks asli adalah nama
+                    visitorData.nama = decodedText;
+                    visitorData.kelas = 'Tidak Diketahui'; // Set kelas ke default
+                    console.warn("Gagal parsing QR Code sebagai JSON, menggunakan teks asli sebagai nama.", e);
+                }
+
+                document.getElementById('result').textContent = `Hasil Scan: ${visitorData.nama} (${visitorData.kelas})`;
                 document.getElementById('status').className = 'status-message';
                 document.getElementById('status').textContent = 'Mengirim data...';
 
-                // Kirim nama pengunjung ke Firebase
+                // Kirim nama dan kelas pengunjung ke Firebase
                 visitorsRef.push({
-                    nama: decodedText,
+                    nama: visitorData.nama,
+                    kelas: visitorData.kelas, // Tambahkan bidang kelas
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 }).then(() => {
                     document.getElementById('status').textContent = 'Data berhasil dikirim! Silakan pindai barcode berikutnya...';
-                    // Mulai ulang pemindai setelah jeda 3 detik
                     setTimeout(() => {
                         startScanner();
-                    }, 3000); // Jeda 3 detik sebelum siap memindai lagi
+                    }, 3000);
                 }).catch((error) => {
                     document.getElementById('status').className = 'error-message';
                     document.getElementById('status').textContent = `Gagal mengirim data: ${error.message}. Coba lagi.`;
                     console.error("Error writing to database", error);
-                    // Jika gagal kirim, coba mulai ulang pemindai setelah jeda
                     setTimeout(() => {
                         startScanner();
                     }, 3000);
                 });
             }).catch((err) => {
-                // Handle error jika gagal menghentikan pemindai (jarang terjadi)
                 console.error("Gagal menghentikan pemindai:", err);
                 isScanning = false;
-                // Tetap coba mulai ulang jika ada error saat stop
                 setTimeout(() => {
                     startScanner();
                 }, 3000);
             });
         }
 
-        /**
-         * Fungsi yang dipanggil ketika pemindaian QR code gagal atau ada error kamera.
-         * @param {string} error - Pesan error.
-         */
         function onScanFailure(error) {
-            // Biarkan kosong atau tambahkan logika untuk menampilkan error penting saja.
             // console.warn(`Code scan error = ${error}`);
         }
 
-        // Mulai pemindai saat halaman dimuat
         document.addEventListener('DOMContentLoaded', startScanner);
     </script>
 </body>
