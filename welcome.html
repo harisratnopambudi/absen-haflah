@@ -4,38 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selamat Datang</title>
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
         body {
-            background-color: #f1c40f;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
             text-align: center;
         }
         h1 {
-            font-size: 3em;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        h2 {
-            font-size: 2.5em;
-            color: #e74c3c;
+            font-size: 48px;
+            color: #333;
         }
     </style>
 </head>
 <body>
 
-    <div>
-        <h1>Assalamualaikum</h1>
-        <h2 id="welcome-name">Silakan Scan</h2>
-    </div>
+    <h1 id="welcome">Selamat Datang</h1>
 
     <script>
-        // Firebase Configuration
+        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
@@ -46,28 +41,19 @@
             appId: "1:298086025599:web:42f92cc7dd8cab7423724a",
             measurementId: "G-6KVLTT6WC5"
         };
+
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const welcomeName = document.getElementById('welcome-name');
+        const welcomeElement = document.getElementById('welcome');
 
-        // Listen to Realtime Database changes
-        db.ref('tamu').on('value', snapshot => {
-            let latestName = 'Silakan Scan';
-            let latestTime = 0;
-
-            snapshot.forEach(child => {
-                const data = child.val();
-                if (data.status === 'Hadir') {
-                    const waktu = new Date(data.waktu).getTime();
-                    if (waktu > latestTime) {
-                        latestTime = waktu;
-                        latestName = data.nama;
-                    }
-                }
-            });
-
-            welcomeName.innerText = `Selamat Datang\n${latestName}`;
+        // Listen to the last absen data
+        db.ref('lastScan').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.nama) {
+                welcomeElement.innerText = `Selamat Datang\n${data.nama}`;
+            }
         });
     </script>
 

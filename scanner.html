@@ -3,18 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Absen</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <title>Scanner QR Code - Absen Tamu</title>
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <!-- QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #reader {
+            width: 300px;
+        }
+    </style>
 </head>
 <body>
 
-    <h1>Scan Barcode Tamu</h1>
-    <div id="reader" style="width:300px;"></div>
+    <h1>Scan QR Code</h1>
+    <div id="reader"></div>
 
     <script>
-        // Konfigurasi Firebase
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
             authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
@@ -25,33 +46,43 @@
             appId: "1:298086025599:web:42f92cc7dd8cab7423724a",
             measurementId: "G-6KVLTT6WC5"
         };
+
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Scanner Function
         function onScanSuccess(decodedText, decodedResult) {
-            // decodedText = kunci database (misalnya: haris)
-            const guestKey = decodedText;
-            const guestRef = db.ref('tamu/' + guestKey);
+            console.log(`Code scanned = ${decodedText}`);
 
-            guestRef.once('value', snapshot => {
-                if (snapshot.exists()) {
-                    guestRef.update({
-                        status: 'Hadir',
-                        waktu: new Date().toLocaleString()
-                    }).then(() => {
-                        // Redirect ke welcome page sambil kirim nama
-                        const guestName = snapshot.val().nama;
-                        window.location.href = `welcome.html?name=${encodeURIComponent(guestName)}`;
-                    });
-                } else {
-                    alert('Data tamu tidak ditemukan!');
-                }
+            // Update status hadir
+            db.ref('tamu/' + decodedText).update({
+                status: 'Hadir',
+                waktu: new Date().toString()
+            }).then(() => {
+                // Ambil data nama
+                db.ref('tamu/' + decodedText).once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && data.nama) {
+                        // Kirim ke lastScan untuk tampilkan di welcome.html
+                        db.ref('lastScan').set({
+                            nama: data.nama
+                        });
+                        alert('Absen Berhasil untuk ' + data.nama);
+                    } else {
+                        alert('Data tamu tidak ditemukan');
+                    }
+                });
+            }).catch((error) => {
+                alert('Gagal absen: ' + error);
             });
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
+        // Scanner Init
+        let scanner = new Html5QrcodeScanner(
             "reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
+
+        scanner.render(onScanSuccess);
     </script>
 
 </body>
