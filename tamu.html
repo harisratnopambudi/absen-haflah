@@ -319,6 +319,7 @@
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
          */
         function showConfirmationModal(message, callback) {
+            console.log("showConfirmationModal dipanggil. Pesan:", message); // DEBUG
             modalMessage.textContent = message;
             confirmationCallback = callback;
             confirmationModal.classList.add('visible');
@@ -328,23 +329,35 @@
          * Menyembunyikan modal konfirmasi kustom.
          */
         function hideConfirmationModal() {
+            console.log("hideConfirmationModal dipanggil."); // DEBUG
             confirmationModal.classList.remove('visible');
             confirmationCallback = null;
         }
 
+        // --- DEBUGGING MODAL BUTTONS ---
         modalConfirmYes.addEventListener('click', () => {
+            console.log("Modal 'Ya' button diklik."); // DEBUG: Pastikan ini muncul
             hideConfirmationModal();
             if (confirmationCallback) {
+                console.log("Memanggil confirmationCallback (Ya)."); // DEBUG
                 confirmationCallback(true);
+            } else {
+                console.warn("confirmationCallback (Ya) tidak ditemukan."); // DEBUG
             }
         });
 
         modalConfirmNo.addEventListener('click', () => {
+            console.log("Modal 'Tidak' button diklik."); // DEBUG: Pastikan ini muncul
             hideConfirmationModal();
             if (confirmationCallback) {
+                console.log("Memanggil confirmationCallback (Tidak)."); // DEBUG
                 confirmationCallback(false);
+            } else {
+                console.warn("confirmationCallback (Tidak) tidak ditemukan."); // DEBUG
             }
         });
+        // --- END DEBUGGING MODAL BUTTONS ---
+
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -360,7 +373,7 @@
                 
                 allVisitorsData = [];
                 updateVisitorList();
-                visitorsRef.off('value'); // Penting: Hentikan listener jika user logout
+                visitorsRef.off('value');
             }
         });
 
@@ -369,10 +382,6 @@
          * Dipanggil hanya setelah pengguna terautentikasi.
          */
         function initializeDataListeners() {
-            // Pastikan listener hanya di-attach satu kali
-            // Jika Anda sudah memiliki listeners dari pemuatan sebelumnya, Anda mungkin perlu melepasnya terlebih dahulu
-            // visitorsRef.off('value'); // Uncomment ini jika ada masalah listener ganda setelah login ulang
-
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
@@ -538,7 +547,7 @@
             }
 
             showConfirmationModal("Apakah Anda yakin ingin menghapus semua data pengunjung? Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
-                console.log("Modal Konfirmasi: Dikonfirmasi = ", confirmed); // DEBUG
+                console.log("Modal Konfirmasi: Dikonfirmasi = ", confirmed); // DEBUG: Ini yang kita cari!
                 if (confirmed) {
                     console.log("Mencoba menghapus data dari Firebase Realtime Database..."); // DEBUG
                     visitorsRef.remove()
