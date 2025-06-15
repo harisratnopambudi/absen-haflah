@@ -35,7 +35,7 @@
         .main-frame-container {
             background-color: #f7f3e9; /* Warna dasar krem/emas terang */
             /* Menggunakan URL pattern yang diunggah ke repository Anda */
-            background-image: url('pattern.png'); /* GANTI 'pattern.png' DENGAN NAMA FILE ASLI ANDA */
+            background-image: url('pattern.png'); /* Pastikan 'pattern.png' adalah nama file yang benar */
             background-repeat: repeat; /* Mengulang pattern */
             /* Border telah dihapus */
             /* border-image juga dihapus */
@@ -57,17 +57,17 @@
             flex-direction: column;
             justify-content: center; /* Perubahan untuk memusatkan secara vertikal */
             align-items: center;
-            gap: 30px; /* Tambahkan jarak antar item flex (header, logo, welcome-message) */
+            gap: 25px; /* Sedikit mengurangi gap agar elemen header lebih dekat ke logo */
 
             position: relative; /* Penting untuk penempatan footer-signature */
         }
 
-        /* Bagian atas (HAFLAH IKHTITAM, SD PLUS 2, Tanggal) */
+        /* Bagian atas (HAFLAH IKHTITAM, SD PLUS 2, Angkatan, Tanggal) */
         .header-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 5px; /* Jarak antar baris teks di header */
             margin-bottom: 0; /* Hilangkan margin-bottom karena sudah ada gap di parent */
         }
         .header-section p {
@@ -92,13 +92,19 @@
             font-family: 'Reem Kufi', sans-serif; /* Font gaya Arab */
             line-height: 1.3;
         }
+        .header-section .angkatan-text { /* Kelas baru untuk "Angkatan X" */
+            font-size: 1.2em; /* Ukuran untuk angkatan */
+            font-weight: 600;
+            color: #8b6e3e;
+            font-family: 'Reem Kufi', sans-serif; /* Font gaya Arab */
+            margin-top: -5px; /* Sedikit naik agar lebih dekat dengan sub-judul */
+        }
         .header-section .date-text {
             font-size: 1.1em; /* Ukuran sedikit lebih besar */
             font-weight: 400;
             color: #a87e35;
             min-height: 1.2em; /* Mencegah CLS saat tanggal dimuat */
             
-            /* STYLING BARU UNTUK BACKGROUND ROUNDED */
             background-color: rgba(255, 255, 255, 0.7); /* Background putih transparan */
             padding: 8px 15px; /* Padding di sekitar teks */
             border-radius: 10px; /* Sudut membulat */
@@ -121,19 +127,44 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
-        /* Kontainer untuk pesan selamat datang dinamis */
-        #welcome-message-container {
-            flex-grow: 1; /* Memungkinkan kontainer ini mengambil sisa ruang */
+        /* Area Konten Pusat yang akan berganti antara aktif dan idle */
+        #central-content-area {
+            flex-grow: 1; /* Memungkinkan area ini mengambil sisa ruang */
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Memusatkan konten secara vertikal */
+            justify-content: center; /* Memusatkan konten secara vertikal di dalam area ini */
             align-items: center;
             padding: 20px 0;
-            /* Animasi akan diatur ulang di JavaScript */
-            opacity: 0; 
-            transform: scale(0.9);
-            animation: fadeInScale 0.8s forwards; 
+            width: 100%; /* Memastikan mengisi lebar */
+        }
+
+        /* Konten untuk status Selamat Datang (dinamis) */
+        #dynamic-welcome-area {
+            display: none; /* Awalnya tersembunyi */
+            flex-direction: column; /* Menggunakan flex untuk mengatur elemen di dalamnya */
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%; /* Mengisi tinggi parent flex-grow */
+            opacity: 0; /* Untuk animasi */
+            transform: scale(0.9); /* Untuk animasi */
             transition: all 0.5s ease-in-out;
+        }
+        /* Animasi muncul hanya untuk dynamic-welcome-area */
+        #dynamic-welcome-area.fade-in {
+            animation: fadeInScale 0.8s forwards; 
+        }
+
+        /* Konten untuk status Idle (statis) */
+        #static-idle-area {
+            display: flex; /* Awalnya terlihat */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%; /* Mengisi tinggi parent flex-grow */
+            opacity: 1; /* Awalnya terlihat */
+            transition: opacity 0.5s ease-in-out;
         }
 
         /* Styling untuk pesan "Assalamualaikum" */
@@ -155,13 +186,25 @@
         }
 
         /* Styling untuk nama pengunjung dinamis */
-        #visitor-name-display { /* ID baru untuk nama pengunjung */
+        #visitor-name-display {
             font-size: 4.5em; /* Ukuran font sangat besar untuk nama */
             color: #4b4b4b; /* Warna teks lebih gelap untuk nama agar menonjol */
             font-weight: 800;
             line-height: 1.2;
             word-wrap: break-word;
             max-width: 100%;
+        }
+
+        /* Styling untuk pesan idle */
+        .idle-message-text {
+            font-size: 2.5em; /* Ukuran besar untuk pesan idle */
+            color: #a87e35; /* Warna emas */
+            font-weight: 600;
+            line-height: 1.5;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         
         /* Animasi muncul (fade in dan scale up) */
@@ -189,25 +232,29 @@
 
 
         /* Media queries untuk responsivitas */
-        @media (max-width: 1024px) { /* Untuk tablet landscape dan desktop kecil */
+        @media (max-width: 1024px) {
             .header-section .title-main { font-size: 2em; }
             .header-section .title-sub { font-size: 1.5em; }
+            .header-section .angkatan-text { font-size: 1.1em; }
             #greeting { font-size: 2.5em; }
             .welcome-phrase { font-size: 1.8em; }
             #visitor-name-display { font-size: 3.8em; }
+            .idle-message-text { font-size: 2em; }
         }
 
-        @media (max-width: 768px) { /* Untuk tablet portrait */
+        @media (max-width: 768px) {
             .main-frame-container { 
                 padding: 25px; 
-                gap: 20px; /* Kurangi gap */
+                gap: 20px; 
             }
             .header-section .title-main { font-size: 1.8em; }
             .header-section .title-sub { font-size: 1.2em; }
+            .header-section .angkatan-text { font-size: 1em; }
             .logo-container img { max-height: 100px; }
             #greeting { font-size: 2.2em; }
             .welcome-phrase { font-size: 1.5em; }
             #visitor-name-display { font-size: 3em; }
+            .idle-message-text { font-size: 1.8em; }
             #footer-signature {
                 font-size: 0.8em;
                 bottom: 15px;
@@ -215,17 +262,19 @@
             }
         }
 
-        @media (max-width: 480px) { /* Untuk smartphone */
+        @media (max-width: 480px) {
             .main-frame-container { 
                 padding: 15px; 
-                gap: 15px; /* Kurangi gap lagi */
+                gap: 15px; 
             }
             .header-section .title-main { font-size: 1.5em; }
             .header-section .title-sub { font-size: 1em; }
+            .header-section .angkatan-text { font-size: 0.9em; }
             .logo-container img { max-height: 80px; }
             #greeting { font-size: 1.5em; }
             .welcome-phrase { font-size: 1.2em; }
             #visitor-name-display { font-size: 2.2em; }
+            .idle-message-text { font-size: 1.5em; }
             #footer-signature {
                 font-size: 0.7em;
                 bottom: 10px;
@@ -240,21 +289,27 @@
         <div class="header-section">
             <p class="title-main">HAFLAH IKHTITAM</p>
             <p class="title-sub">SD PLUS 2 AL-MUHAJIRIN</p>
+            <p class="angkatan-text">ANGKATAN X</p>
             <p class="date-text" id="realtime-date"></p>
         </div>
 
         <div class="logo-container">
-            <!-- URL logo telah diganti dengan 'LOGO.png' -->
+            <!-- URL logo: Pastikan 'LOGO.png' adalah nama file yang benar -->
             <img src="LOGO.png" alt="Logo SD PLUS 2 Al-Muhajirin" onerror="this.onerror=null;this.src='https://placehold.co/120x120/a87e35/ffffff?text=LOGO';">
         </div>
 
-        <div id="welcome-message-container">
-            <div id="greeting">Assalamualaikum</div>
-            <div class="welcome-phrase">Selamat datang orang tua Ananda</div>
-            <div id="visitor-name-display"></div> <!-- Nama pengunjung akan muncul di sini -->
+        <!-- Area Konten Pusat yang akan berganti antara aktif dan idle -->
+        <div id="central-content-area">
+            <div id="dynamic-welcome-area" class="content-state">
+                <div id="greeting">Assalamualaikum</div>
+                <div class="welcome-phrase">Selamat datang orang tua Ananda</div>
+                <div id="visitor-name-display"></div>
+            </div>
+            <div id="static-idle-area" class="content-state">
+                <p class="idle-message-text">Silakan Pindai QR Code Anda</p>
+            </div>
         </div>
-
-        <!-- Tanda Tangan Footer Baru -->
+        
         <div id="footer-signature">
             Build with love Haris Ratno Pambudi
         </div>
@@ -279,25 +334,30 @@
         const visitorsRef = database.ref('pengunjung'); 
 
         const visitorNameDisplayElement = document.getElementById('visitor-name-display');
-        const welcomeContainer = document.getElementById('welcome-message-container');
-        const realtimeDateElement = document.getElementById('realtime-date'); // Elemen untuk tanggal realtime
+        const realtimeDateElement = document.getElementById('realtime-date');
+
+        const dynamicWelcomeArea = document.getElementById('dynamic-welcome-area');
+        const staticIdleArea = document.getElementById('static-idle-area');
 
         let lastDisplayedVisitorId = null;
+        let inactivityTimeoutId; // Variabel untuk menyimpan ID timer
+
+        const IDLE_TIMEOUT_MS = 60 * 1000; // 1 menit = 60.000 milidetik
 
         // Peta untuk konversi nama bulan Hijriyah (dari bahasa Inggris ke Indonesia/yang diinginkan)
         const hijriMonthMapping = {
             "Muharram": "Muharram",
             "Safar": "Safar",
-            "Rabiʻ I": "Rabi' al-Awwal", // atau 'Rabiul Awal'
-            "Rabiʻ II": "Rabi' al-Thani", // atau 'Rabiul Akhir'
-            "Jumada I": "Jumada al-Ula", // atau 'Jumadil Awal'
-            "Jumada II": "Jumada al-Thania", // atau 'Jumadil Akhir'
+            "Rabiʻ I": "Rabi' al-Awwal",
+            "Rabiʻ II": "Rabi' al-Thani",
+            "Jumada I": "Jumada al-Ula",
+            "Jumada II": "Jumada al-Thania",
             "Rajab": "Rajab",
             "Shaʻban": "Sya'ban",
             "Ramadan": "Ramadhan",
             "Shawwal": "Syawal",
-            "Dhū al-Qaʻdah": "Dhu al-Qa'dah", // atau 'Dzulkaidah'
-            "Dhū al-Ḥijjah": "Dhu al-Hijjah" // atau 'Dzulhijah'
+            "Dhū al-Qaʻdah": "Dhu al-Qa'dah",
+            "Dhū al-Ḥijjah": "Dhu al-Hijjah"
         };
 
         /**
@@ -313,13 +373,11 @@
             // Format tanggal Hijriyah menggunakan Intl.DateTimeFormat
             let hijriDate = "Tanggal Hijriyah Tidak Diketahui";
             try {
-                // Menggunakan 'en-US' locale untuk mendapatkan nama bulan dalam bahasa Inggris,
-                // lalu mengonversinya ke nama bulan yang umum di Indonesia.
                 const optionsHijri = {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
-                    calendar: 'islamic-umalqura' // Sistem kalender Umalqura
+                    calendar: 'islamic-umalqura'
                 };
                 const hijriParts = new Intl.DateTimeFormat('en-US', optionsHijri).formatToParts(now);
                 let hijriDay, hijriMonthEnglish, hijriYear;
@@ -329,42 +387,85 @@
                     if (part.type === 'year') hijriYear = part.value;
                 }
 
-                // Konversi nama bulan Hijriyah dari Inggris ke Indonesia/yang diinginkan
                 const hijriMonthIndonesian = hijriMonthMapping[hijriMonthEnglish] || hijriMonthEnglish;
-
                 hijriDate = `${hijriDay} ${hijriMonthIndonesian} ${hijriYear} H`;
 
             } catch (e) {
                 console.warn("Gagal memformat tanggal Hijriyah:", e);
             }
 
-            // Gabungkan dan tampilkan tanggal
             realtimeDateElement.textContent = `${gregorianDate} / ${hijriDate}`;
         }
 
+        /**
+         * Fungsi untuk menampilkan status diam (idle state).
+         * Menyembunyikan pesan selamat datang dinamis.
+         */
+        function showIdleState() {
+            console.log("DEBUG: Menampilkan status Idle.");
+            dynamicWelcomeArea.style.display = 'none';
+            staticIdleArea.style.display = 'flex'; // Gunakan flex untuk memusatkan pesan idle
+            dynamicWelcomeArea.classList.remove('fade-in'); // Hapus kelas animasi saat idle
+        }
+
+        /**
+         * Fungsi untuk menampilkan status selamat datang (dynamic welcome state).
+         * Menampilkan pesan selamat datang dinamis dengan nama pengunjung.
+         * @param {string} visitorName - Nama pengunjung yang akan ditampilkan.
+         */
+        function showDynamicWelcome(visitorName) {
+            console.log("DEBUG: Menampilkan status Welcome untuk:", visitorName);
+            visitorNameDisplayElement.textContent = visitorName;
+            staticIdleArea.style.display = 'none';
+            dynamicWelcomeArea.style.display = 'flex'; // Gunakan flex untuk memusatkan pesan selamat datang
+
+            // Reset dan picu animasi
+            dynamicWelcomeArea.classList.remove('fade-in');
+            // Memaksa reflow untuk mengulang animasi
+            void dynamicWelcomeArea.offsetWidth; 
+            dynamicWelcomeArea.classList.add('fade-in');
+            
+            resetInactivityTimer(); // Reset timer setiap kali ada scan baru
+        }
+
+        /**
+         * Fungsi untuk mengatur ulang timer aktivitas.
+         * Jika tidak ada scan selama IDLE_TIMEOUT_MS, akan beralih ke idle state.
+         */
+        function resetInactivityTimer() {
+            console.log("DEBUG: Timer Inaktivitas diatur ulang.");
+            clearTimeout(inactivityTimeoutId); // Hapus timer yang ada
+            inactivityTimeoutId = setTimeout(showIdleState, IDLE_TIMEOUT_MS); // Set timer baru
+        }
+
         // Panggil fungsi update tanggal saat halaman dimuat
-        document.addEventListener('DOMContentLoaded', updateRealtimeDate);
-        // Perbarui tanggal setiap jam (atau bisa lebih sering jika diperlukan, misal setiap menit)
-        setInterval(updateRealtimeDate, 60 * 60 * 1000); // Setiap 1 jam
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRealtimeDate();
+            // Perbarui tanggal setiap jam
+            setInterval(updateRealtimeDate, 60 * 60 * 1000); 
+
+            // Atur status awal ke idle
+            showIdleState();
+            // Set timer awal agar masuk ke idle jika tidak ada scan pertama setelah page load
+            resetInactivityTimer(); 
+        });
 
         // Mendengarkan penambahan anak (child_added) ke node 'pengunjung'
         visitorsRef.on('child_added', (snapshot) => {
             const visitorData = snapshot.val();
             const visitorId = snapshot.key;
 
+            // Pastikan statusnya 'hadir' dan ini bukan pengunjung yang sama yang baru saja ditampilkan
             if (visitorData.status === 'hadir' && visitorId !== lastDisplayedVisitorId) {
                 const visitorName = visitorData.nama; 
-
-                visitorNameDisplayElement.textContent = visitorName;
-                lastDisplayedVisitorId = visitorId;
-
-                welcomeContainer.style.animation = 'none'; 
-                void welcomeContainer.offsetHeight; 
-                welcomeContainer.style.animation = 'fadeInScale 0.8s forwards'; 
+                showDynamicWelcome(visitorName); // Tampilkan pesan selamat datang dinamis
+                lastDisplayedVisitorId = visitorId; // Simpan ID pengunjung yang baru ditampilkan
             }
         }, (error) => {
             console.error("Error reading data from Firebase in welcome.html:", error);
             visitorNameDisplayElement.textContent = 'Error memuat nama pengunjung.';
+            // Jika ada error baca, kembali ke idle state
+            showIdleState(); 
         });
     </script>
 </body>
