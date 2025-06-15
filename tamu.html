@@ -6,7 +6,7 @@
     <title>Daftar Pengunjung (Enhanced)</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> <!-- Pastikan auth SDK juga diimpor -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> <!-- Pastikan auth SDK diimpor -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <!-- FileSaver.js untuk mengunduh file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -311,6 +311,8 @@
         const modalConfirmNo = document.getElementById('modalConfirmNo');
         let confirmationCallback = null;
 
+        let isUserAuthenticated = false; // Flag baru untuk melacak status autentikasi
+
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
@@ -351,16 +353,19 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("User logged in:", user.email);
-                // Pengguna sudah login, sekarang aman untuk memuat data dan mengaktifkan fitur tulis
+                isUserAuthenticated = true; // Set flag ke true
                 initializeDataListeners(); // Panggil fungsi untuk mulai mendengarkan data Firebase
-                // Pastikan tombol clear aktif (meskipun defaultnya sudah aktif)
-                clearDataBtn.disabled = false; 
+                clearDataBtn.disabled = false; // Aktifkan tombol Clear
             } else {
-                // Pengguna belum login, alihkan ke halaman login
                 console.log("No user logged in. Redirecting to login page.");
-                window.location.href = 'login.html';
-                // Nonaktifkan tombol clear jika belum login
-                clearDataBtn.disabled = true; 
+                isUserAuthenticated = false; // Set flag ke false
+                window.location.href = 'login.html'; // Alihkan ke halaman login
+                clearDataBtn.disabled = true; // Nonaktifkan tombol Clear
+                
+                // Hapus data lokal dan listeners jika pengguna keluar atau tidak login
+                allVisitorsData = [];
+                updateVisitorList(); // Perbarui tampilan tabel menjadi kosong
+                visitorsRef.off('value'); // Hentikan mendengarkan perubahan Firebase
             }
         });
 
@@ -369,7 +374,8 @@
          * Dipanggil hanya setelah pengguna terautentikasi.
          */
         function initializeDataListeners() {
-            // Listener untuk data Firebase
+            // Hanya attach listener jika belum ada atau jika status berubah (optional, for safety)
+            // visitorsRef.off('value'); // Bisa ditambahkan jika ada risiko listener ganda
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
@@ -383,7 +389,6 @@
                 updateVisitorList();
             }, (error) => {
                 console.error("Error reading data from Firebase:", error);
-                // Ini akan tampil jika izin baca ditolak (misal, belum login padahal aturan .read: auth != null)
                 visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}. Pastikan Anda sudah login.</td></tr>`;
             });
         }
@@ -528,6 +533,14 @@
          * Fungsi untuk menghapus semua data pengunjung dari Firebase.
          */
         function clearAllVisitorsData() {
+            // Cek status autentikasi sebelum mencoba menghapus
+            if (!isUserAuthenticated) {
+                showConfirmationModal("Anda harus login untuk menghapus data. Mohon login terlebih dahulu.", () => {
+                    window.location.href = 'login.html'; // Alihkan ke login jika belum login
+                });
+                return;
+            }
+
             showConfirmationModal("Apakah Anda yakin ingin menghapus semua data pengunjung? Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
                 if (confirmed) {
                     visitorsRef.remove()
