@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Pengunjung (Langkah Debugging)</title>
+    <title>Daftar Pengunjung (Enhanced)</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
@@ -82,13 +82,14 @@
         #exportExcelBtn:hover {
             background-color: #218838;
         }
-        /* Styling untuk tombol Clear Data */
-        #clearDataBtn {
-            background-color: #dc3545;
-            box-shadow: 0 2px 5px rgba(220,53,69,0.2);
+        /* Styling untuk tombol Clear Data (diganti jadi Reset Data) */
+        #resetDataBtn { /* ID baru */
+            background-color: #ffc107; /* Warna kuning/oranye untuk Reset */
+            color: #333;
+            box-shadow: 0 2px 5px rgba(255,193,7,0.2);
         }
-        #clearDataBtn:hover {
-            background-color: #c82333;
+        #resetDataBtn:hover {
+            background-color: #e0a800;
         }
 
         /* Styling untuk tabel daftar pengunjung */
@@ -172,7 +173,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000; /* Pastikan di atas elemen lain */
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -210,7 +211,7 @@
             transition: background-color 0.2s ease;
         }
         .modal-buttons .btn-yes {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Merah untuk Yes */
             color: white;
             border: none;
         }
@@ -218,7 +219,7 @@
             background-color: #c82333;
         }
         .modal-buttons .btn-no {
-            background-color: #6c757d;
+            background-color: #6c757d; /* Abu-abu untuk No */
             color: white;
             border: none;
         }
@@ -248,7 +249,7 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="clearDataBtn">Clear Semua Data</button>
+        <button id="resetDataBtn">Reset Data Pengunjung</button> <!-- ID dan teks baru -->
     </div>
 
     <table id="visitor-list">
@@ -299,7 +300,7 @@
         const searchFilterInput = document.getElementById('searchFilter');
         const sortBySelect = document.getElementById('sortBy');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const clearDataBtn = document.getElementById('clearDataBtn');
+        const resetDataBtn = document.getElementById('resetDataBtn'); // ID baru untuk tombol reset
 
         let allVisitorsData = [];
         let currentSortColumn = 'timestamp';
@@ -321,11 +322,16 @@
         function showConfirmationModal(message, callback) {
             console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
-            confirmationCallback = callback;
-            modalConfirmYes.removeEventListener('click', modalYesHandler); // Hapus listener lama jika ada
-            modalConfirmYes.addEventListener('click', modalYesHandler); // Tambahkan listener baru
-            modalConfirmNo.removeEventListener('click', modalNoHandler); // Hapus listener lama jika ada
-            modalConfirmNo.addEventListener('click', modalNoHandler); // Tambahkan listener baru
+            confirmationCallback = callback; // Simpan callback di variabel global
+
+            // Pasang event listener menggunakan metode addEventListener
+            // Pastikan tidak ada duplikasi listener
+            modalConfirmYes.removeEventListener('click', modalYesHandler);
+            modalConfirmYes.addEventListener('click', modalYesHandler);
+            
+            modalConfirmNo.removeEventListener('click', modalNoHandler);
+            modalConfirmNo.addEventListener('click', modalNoHandler);
+            
             confirmationModal.classList.add('visible');
         }
 
@@ -335,59 +341,66 @@
         function hideConfirmationModal() {
             console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
-            confirmationCallback = null;
             // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
+            confirmationCallback = null; // Set callback ke null setelah digunakan atau disembunyikan
         }
 
         // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
-        // Ini adalah fungsi terpisah agar kita bisa menambah/menghapus listener dengan benar
+        // Fungsi ini akan dieksekusi saat tombol 'Ya' diklik
         function modalYesHandler() {
             console.log("DEBUG: Modal 'Ya' button diklik (handler).");
-            debugger; // Debugger akan berhenti di sini
-            hideConfirmationModal();
-            if (confirmationCallback) {
+            // Ambil callback sebelum memanggil hideConfirmationModal yang mungkin menyetelnya ke null
+            const currentCallback = confirmationCallback; 
+            hideConfirmationModal(); // Sembunyikan modal
+            if (currentCallback) {
                 console.log("DEBUG: Memanggil confirmationCallback (Ya).");
-                confirmationCallback(true);
+                currentCallback(true); // Panggil callback dengan true
             } else {
                 console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
             }
         }
 
+        // Fungsi ini akan dieksekusi saat tombol 'Tidak' diklik
         function modalNoHandler() {
             console.log("DEBUG: Modal 'Tidak' button diklik (handler).");
-            debugger; // Debugger akan berhenti di sini
+            const currentCallback = confirmationCallback;
             hideConfirmationModal();
-            if (confirmationCallback) {
+            if (currentCallback) {
                 console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
-                confirmationCallback(false);
+                currentCallback(false);
             } else {
                 console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
         }
         // --- END HANDLER FUNCTIONS ---
 
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("Auth Status: User logged in as", user.email);
                 isUserAuthenticated = true;
                 initializeDataListeners();
-                clearDataBtn.disabled = false;
+                resetDataBtn.disabled = false; // Aktifkan tombol Reset
             } else {
                 console.log("Auth Status: No user logged in. Redirecting to login page.");
                 isUserAuthenticated = false;
                 window.location.href = 'login.html';
-                clearDataBtn.disabled = true;
+                resetDataBtn.disabled = true; // Nonaktifkan tombol Reset
                 
                 allVisitorsData = [];
                 updateVisitorList();
-                visitorsRef.off('value');
+                visitorsRef.off('value'); // Hentikan mendengarkan perubahan Firebase
             }
         });
 
+        /**
+         * Fungsi untuk menginisialisasi listener data Firebase.
+         * Dipanggil hanya setelah pengguna terautentikasi.
+         */
         function initializeDataListeners() {
+            // Pastikan listener hanya di-attach sekali (visitorsRef.off() akan melepas listener sebelumnya)
+            visitorsRef.off('value'); 
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
@@ -405,6 +418,9 @@
             });
         }
 
+        /**
+         * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
+         */
         function updateVisitorList() {
             let filteredVisitors = [...allVisitorsData];
 
@@ -536,48 +552,45 @@
         exportExcelBtn.addEventListener('click', exportToCsv);
 
         /**
-         * Fungsi untuk menghapus semua data pengunjung dari Firebase.
+         * Fungsi untuk mereset/mengosongkan semua data pengunjung dari Firebase.
          */
-        function clearAllVisitorsData() {
-            console.log("DEBUG: Tombol Clear Data diklik.");
-            debugger; // DEBUG: Kode akan berhenti di sini saat tombol "Clear Semua Data" diklik
+        function resetVisitorsData() { // Nama fungsi baru
+            console.log("DEBUG: Tombol Reset Data diklik."); 
 
             if (!isUserAuthenticated) {
-                console.warn("DEBUG: Clear Data: Pengguna tidak terautentikasi.");
-                showConfirmationModal("Anda harus login untuk menghapus data. Mohon login terlebih dahulu.", () => {
+                console.warn("DEBUG: Reset Data: Pengguna tidak terautentikasi.");
+                showConfirmationModal("Anda harus login untuk mereset data. Mohon login terlebih dahulu.", () => {
                     window.location.href = 'login.html';
                 });
                 return;
             }
 
-            showConfirmationModal("Apakah Anda yakin ingin menghapus semua data pengunjung? Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
-                // Baris ini akan dieksekusi HANYA setelah mengklik "Ya" atau "Tidak" di modal
-                console.log("DEBUG: Modal Konfirmasi Callback dipanggil. Dikonfirmasi = ", confirmed); 
+            showConfirmationModal("Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
                 if (confirmed) {
-                    console.log("DEBUG: Mencoba menghapus data dari Firebase Realtime Database...");
-                    visitorsRef.remove()
+                    console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
+                    visitorsRef.set({}) // Mengatur node 'pengunjung' menjadi objek kosong
                         .then(() => {
-                            console.log("DEBUG: Firebase Remove: Data berhasil dihapus dari Realtime Database.");
-                            allVisitorsData = [];
-                            updateVisitorList();
-                            showConfirmationModal("Semua data pengunjung berhasil dihapus!", () => {});
+                            console.log("DEBUG: Firebase Reset: Data berhasil direset di Realtime Database.");
+                            // Karena kita menggunakan listener 'value', allVisitorsData akan otomatis kosong
+                            // dan updateVisitorList() akan dipicu otomatis.
+                            showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
                             setTimeout(() => hideConfirmationModal(), 2000); 
                         })
                         .catch((error) => {
-                            console.error("DEBUG: Firebase Remove Error:", error);
+                            console.error("DEBUG: Firebase Reset Error:", error);
                             if (error.code === "PERMISSION_DENIED") {
-                                showConfirmationModal(`Gagal menghapus data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
+                                showConfirmationModal(`Gagal mereset data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
                             } else {
-                                showConfirmationModal(`Gagal menghapus data: ${error.message}`, () => {});
+                                showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
                             }
                         });
                 } else {
-                    console.log("DEBUG: Firebase Remove: Penghapusan dibatalkan oleh pengguna.");
+                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna.");
                 }
             });
         }
 
-        clearDataBtn.addEventListener('click', clearAllVisitorsData);
+        resetDataBtn.addEventListener('click', resetVisitorsData); // Event listener baru
     </script>
 </body>
 </html>
