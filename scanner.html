@@ -4,11 +4,16 @@
     <title>Scanner Absen</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #reader { width: 300px; margin: auto; }
+    </style>
 </head>
 <body>
+
     <h1>Scan QR Code Tamu</h1>
-    <div id="reader" style="width: 300px;"></div>
+    <div id="reader"></div>
 
     <script>
         // Konfigurasi Firebase
@@ -26,9 +31,9 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // Inisialisasi QR Scanner
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`Kode Terbaca: ${decodedText}`);
+
             const scanRef = db.ref('absen/' + decodedText);
 
             // Update status hadir dan waktu
@@ -46,7 +51,7 @@
                         });
                         alert('Absen Berhasil untuk ' + data.nama);
                     } else {
-                        alert('Data tamu tidak ditemukan');
+                        alert('Data tamu tidak ditemukan.');
                     }
                 });
             }).catch((error) => {
@@ -55,10 +60,19 @@
             });
         }
 
-        // Mulai QR Scanner
-        var html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
+        var html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, // Gunakan kamera belakang
+            {
+                fps: 10, // Frame per second
+                qrbox: 250 // Ukuran area scan
+            },
+            onScanSuccess
+        ).catch(err => {
+            console.error("Camera start error:", err);
+            alert("Tidak bisa mengakses kamera. Pastikan sudah diizinkan.");
+        });
     </script>
+
 </body>
 </html>
