@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Pengunjung (Enhanced)</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Inter untuk konsistensi -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
@@ -16,119 +11,226 @@
     <!-- FileSaver.js untuk mengunduh file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
+        /* Styling dasar untuk body */
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 min-h-screen flex flex-col items-center p-4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
         }
+        /* Styling untuk judul utama */
         h1 {
-            @apply text-3xl font-bold text-blue-800 mb-8;
+            color: #0056b3;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
+        /* Kontrol filter dan sort */
         .controls {
-            @apply flex flex-wrap gap-4 mb-6 p-4 bg-white rounded-lg shadow-md w-full max-w-5xl justify-center items-center;
-        }
-        .controls > div {
-            @apply flex items-center gap-2;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            width: 90%;
+            max-width: 1000px;
+            justify-content: center;
+            align-items: center;
         }
         .controls label {
-            @apply font-semibold text-gray-700;
+            font-weight: 600;
+            color: #555;
+            margin-right: 5px;
         }
         .controls input[type="text"],
         .controls select {
-            @apply p-2 border border-gray-300 rounded-md text-base flex-grow max-w-xs;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            flex-grow: 1;
+            max-width: 250px;
         }
         .controls button {
-            @apply bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300 ease-in-out shadow-sm;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.2);
         }
+        .controls button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        .controls button:active {
+            transform: translateY(0);
+        }
+        /* Styling untuk tombol Export */
         #exportExcelBtn {
-            @apply bg-green-600 hover:bg-green-700;
+            background-color: #28a745;
+            box-shadow: 0 2px 5px rgba(40,167,69,0.2);
         }
-        #resetDataBtn { /* ID untuk tombol reset data */
-            @apply bg-red-600 hover:bg-red-700; /* Warna merah untuk reset */
+        #exportExcelBtn:hover {
+            background-color: #218838;
         }
-        
-        #visitor-list {
-            @apply w-full max-w-5xl border-collapse shadow-lg rounded-lg overflow-hidden mt-6;
+        /* Styling untuk tombol Clear Data (diganti jadi Reset Data) */
+        #resetDataBtn { /* ID baru */
+            background-color: #ffc107; /* Warna kuning/oranye untuk Reset */
+            color: #333;
+            box-shadow: 0 2px 5px rgba(255,193,7,0.2);
         }
-        #visitor-list th, #visitor-list td {
-            @apply border border-gray-200 p-3 text-left;
-        }
-        #visitor-list th {
-            @apply bg-blue-700 text-white font-bold uppercase tracking-wider cursor-pointer;
-        }
-        #visitor-list th.sort-asc::after { content: ' \u25B2'; }
-        #visitor-list th.sort-desc::after { content: ' \u25BC'; }
-        #visitor-list tr:nth-child(even) {
-            @apply bg-blue-50;
-        }
-        #visitor-list tr:hover {
-            @apply bg-blue-100 cursor-default;
-        }
-        .new-visitor {
-            @apply bg-green-100;
-            animation: fadeInOut 4s forwards;
-        }
-        @keyframes fadeInOut {
-            from { background-color: #d4edda; }
-            to { background-color: inherit; }
+        #resetDataBtn:hover {
+            background-color: #e0a800;
         }
 
-        /* Modal Konfirmasi Kustom */
+        /* Styling untuk tabel daftar pengunjung */
+        #visitor-list {
+            width: 90%;
+            max-width: 1000px;
+            margin-top: 20px;
+            border-collapse: collapse;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        /* Styling untuk header tabel (th) dan sel data (td) */
+        #visitor-list th, #visitor-list td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        /* Styling khusus untuk header tabel */
+        #visitor-list th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+        /* Indikator sortir */
+        #visitor-list th.sort-asc::after { content: ' \u25B2'; }
+        #visitor-list th.sort-desc::after { content: ' \u25BC'; }
+
+        /* Styling untuk baris genap pada tabel */
+        #visitor-list tr:nth-child(even) {
+            background-color: #f2f7fc;
+        }
+        /* Styling untuk baris ganjil pada tabel */
+        #visitor-list tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        /* Efek hover pada baris tabel */
+        #visitor-list tr:hover {
+            background-color: #e9f5ff;
+            cursor: default;
+        }
+        /* Styling untuk pengunjung baru yang ditambahkan */
+        .new-visitor {
+            background-color: #d4edda !important;
+            animation: fadeInOut 4s forwards;
+        }
+
+        /* Keyframes untuk animasi fade in dan fade out */
+        @keyframes fadeInOut {
+            0% { background-color: #d4edda; opacity: 0.5; }
+            20% { background-color: #d4edda; opacity: 1; }
+            80% { background-color: #d4edda; opacity: 1; }
+            100% { background-color: #f9f9f9; opacity: 1; }
+        }
+
+        /* Responsifitas untuk kontrol */
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .controls input[type="text"],
+            .controls select,
+            .controls button {
+                width: 100%;
+                max-width: none;
+            }
+        }
+
+        /* Styling untuk Modal Konfirmasi Kustom */
         .modal-overlay {
-            @apply fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .modal-overlay.visible {
-            @apply opacity-100 visible;
+            opacity: 1;
+            visibility: visible;
         }
         .modal-content {
-            @apply bg-white p-8 rounded-lg shadow-2xl text-center max-w-md w-11/12;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
             transform: translateY(-20px);
             transition: transform 0.3s ease;
         }
         .modal-overlay.visible .modal-content {
-            @apply translate-y-0;
+            transform: translateY(0);
         }
         .modal-content p {
-            @apply text-lg mb-6 text-gray-800;
-        }
-        /* Styling untuk input kalimat sakti */
-        .modal-input-group {
-            @apply mb-5 flex flex-col items-start w-full;
-            display: none; /* Awalnya tersembunyi */
-        }
-        .modal-input-group label {
-            @apply mb-2 font-semibold text-gray-700 text-base;
-        }
-        .modal-input-group input {
-            @apply p-2 border border-gray-300 rounded-md w-full text-base;
-        }
-        .modal-input-group .error-text {
-            @apply text-red-600 text-sm mt-1 min-h-[1.25rem]; /* min-h untuk mencegah CLS */
-        }
-        .modal-buttons {
-            @apply flex justify-center gap-4;
+            font-size: 1.2em;
+            margin-bottom: 25px;
+            color: #333;
         }
         .modal-buttons button {
-            @apply py-2 px-5 rounded-md font-bold transition duration-200;
+            margin: 0 10px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
         }
         .modal-buttons .btn-yes {
-            @apply bg-red-600 text-white hover:bg-red-700;
+            background-color: #dc3545; /* Merah untuk Yes */
+            color: white;
+            border: none;
+        }
+        .modal-buttons .btn-yes:hover {
+            background-color: #c82333;
         }
         .modal-buttons .btn-no {
-            @apply bg-gray-500 text-white hover:bg-gray-600;
+            background-color: #6c757d; /* Abu-abu untuk No */
+            color: white;
+            border: none;
         }
-
-        /* Pesan loading untuk operasi reset */
-        #reset-loading-message {
-            @apply text-blue-600 font-semibold mt-4 hidden;
+        .modal-buttons .btn-no:hover {
+            background-color: #5a6268;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+<body>
 
-    <h1 class="text-3xl font-bold text-blue-800 mb-8">Daftar Pengunjung</h1>
+    <h1>Daftar Pengunjung</h1>
 
     <div class="controls">
         <div>
@@ -147,7 +249,7 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="resetDataBtn">Reset Data Pengunjung</button>
+        <button id="resetDataBtn">Reset Data Pengunjung</button> <!-- ID dan teks baru -->
     </div>
 
     <table id="visitor-list">
@@ -156,7 +258,7 @@
                 <th>No.</th>
                 <th data-sort="nama">Nama Pengunjung</th>
                 <th data-sort="kelas">Kelas</th>
-                <th>Waktu Scan</th>
+                <th data-sort="timestamp">Waktu Scan</th>
             </tr>
         </thead>
         <tbody>
@@ -168,19 +270,10 @@
     <div id="confirmationModal" class="modal-overlay">
         <div class="modal-content">
             <p id="modalMessage"></p>
-            
-            <!-- Input Kalimat Sakti -->
-            <div id="magicPhraseInputGroup" class="modal-input-group">
-                <label for="magicPhraseInput">Kalimat Sakti:</label>
-                <input type="text" id="magicPhraseInput" placeholder="Masukkan kalimat rahasia">
-                <span id="magicPhraseError" class="error-text"></span>
-            </div>
-
             <div class="modal-buttons">
                 <button class="btn-yes" id="modalConfirmYes">Ya</button>
                 <button class="btn-no" id="modalConfirmNo">Tidak</button>
             </div>
-            <div id="reset-loading-message" class="mt-4 text-blue-600 font-semibold hidden"></div>
         </div>
     </div>
 
@@ -193,7 +286,7 @@
             projectId: "absen-tamu-undangan-haflah",
             storageBucket: "absen-tamu-undangan-haflah.firebasestorage.app",
             messagingSenderId: "298086025599",
-            appId: "1:298086025599:web:42f92cc7dd8cab7423724a",
+            appId: "1:298086025599:web:818f9a8cd794f0f023724a",
             measurementId: "G-P5E6HY528V"
         };
 
@@ -207,7 +300,7 @@
         const searchFilterInput = document.getElementById('searchFilter');
         const sortBySelect = document.getElementById('sortBy');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const resetDataBtn = document.getElementById('resetDataBtn');
+        const resetDataBtn = document.getElementById('resetDataBtn'); // ID baru untuk tombol reset
 
         let allVisitorsData = [];
         let currentSortColumn = 'timestamp';
@@ -217,38 +310,22 @@
         const modalMessage = document.getElementById('modalMessage');
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
-        // Elemen untuk kalimat sakti
-        const magicPhraseInputGroup = document.getElementById('magicPhraseInputGroup');
-        const magicPhraseInput = document.getElementById('magicPhraseInput');
-        const magicPhraseErrorSpan = document.getElementById('magicPhraseError');
-        const resetLoadingMessage = document.getElementById('reset-loading-message'); // Pesan loading di modal
-
         let confirmationCallback = null;
-        let isUserAuthenticated = false;
 
-        const MAGIC_PHRASE = "harisgantengbanget"; // Kalimat sakti Anda
+        let isUserAuthenticated = false;
 
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
-         * @param {boolean} showMagicPhraseInput - True jika input kalimat sakti harus ditampilkan.
          */
-        function showConfirmationModal(message, callback, showMagicPhraseInput = false) {
+        function showConfirmationModal(message, callback) {
+            console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
-            confirmationCallback = callback;
-
-            magicPhraseInput.value = ''; // Kosongkan input kalimat sakti
-            magicPhraseErrorSpan.textContent = ''; // Kosongkan pesan error kalimat sakti
-
-            if (showMagicPhraseInput) {
-                magicPhraseInputGroup.style.display = 'flex'; // Tampilkan input kalimat sakti
-                magicPhraseInput.focus(); // Fokus ke input kalimat sakti
-            } else {
-                magicPhraseInputGroup.style.display = 'none'; // Sembunyikan input kalimat sakti
-            }
+            confirmationCallback = callback; // Simpan callback di variabel global
 
             // Pasang event listener menggunakan metode addEventListener
+            // Pastikan tidak ada duplikasi listener
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmYes.addEventListener('click', modalYesHandler);
             
@@ -262,70 +339,68 @@
          * Menyembunyikan modal konfirmasi kustom.
          */
         function hideConfirmationModal() {
+            console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
-            confirmationCallback = null;
-            magicPhraseInputGroup.style.display = 'none'; // Pastikan input kalimat sakti disembunyikan
-            magicPhraseInput.value = ''; // Bersihkan input
-            magicPhraseErrorSpan.textContent = ''; // Bersihkan error
-            resetLoadingMessage.classList.add('hidden'); // Sembunyikan pesan loading modal
-
             // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
+            confirmationCallback = null; // Set callback ke null setelah digunakan atau disembunyikan
         }
 
-        // Fungsi handler untuk tombol 'Ya' di modal
+        // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
+        // Fungsi ini akan dieksekusi saat tombol 'Ya' diklik
         function modalYesHandler() {
-            const isMagicPhraseVisible = magicPhraseInputGroup.style.display === 'flex';
-            
-            if (isMagicPhraseVisible) {
-                const enteredPhrase = magicPhraseInput.value.trim();
-                if (enteredPhrase === MAGIC_PHRASE) {
-                    hideConfirmationModal();
-                    if (confirmationCallback) {
-                        confirmationCallback(true);
-                    }
-                } else {
-                    magicPhraseErrorSpan.textContent = "Kalimat sakti salah!";
-                }
+            console.log("DEBUG: Modal 'Ya' button diklik (handler).");
+            // Ambil callback sebelum memanggil hideConfirmationModal yang mungkin menyetelnya ke null
+            const currentCallback = confirmationCallback; 
+            hideConfirmationModal(); // Sembunyikan modal
+            if (currentCallback) {
+                console.log("DEBUG: Memanggil confirmationCallback (Ya).");
+                currentCallback(true); // Panggil callback dengan true
             } else {
-                // Jika input kalimat sakti tidak terlihat, langsung panggil callback (untuk export excel)
-                hideConfirmationModal();
-                if (confirmationCallback) {
-                    confirmationCallback(true);
-                }
+                console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
             }
         }
 
-        // Fungsi handler untuk tombol 'Tidak' di modal
+        // Fungsi ini akan dieksekusi saat tombol 'Tidak' diklik
         function modalNoHandler() {
+            console.log("DEBUG: Modal 'Tidak' button diklik (handler).");
+            const currentCallback = confirmationCallback;
             hideConfirmationModal();
-            if (confirmationCallback) {
-                confirmationCallback(false);
+            if (currentCallback) {
+                console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
+                currentCallback(false);
+            } else {
+                console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
         }
+        // --- END HANDLER FUNCTIONS ---
 
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("Auth Status: User logged in as", user.email);
                 isUserAuthenticated = true;
                 initializeDataListeners();
-                resetDataBtn.disabled = false;
-                resetDataBtn.classList.remove('opacity-50', 'cursor-not-allowed'); // Aktifkan styling tombol
+                resetDataBtn.disabled = false; // Aktifkan tombol Reset
             } else {
                 console.log("Auth Status: No user logged in. Redirecting to login page.");
                 isUserAuthenticated = false;
-                window.location.href = window.location.origin + '/absen-haflah/login.html'; // Path absolut
-                resetDataBtn.disabled = true;
-                resetDataBtn.classList.add('opacity-50', 'cursor-not-allowed'); // Nonaktifkan styling tombol
+                window.location.href = 'login.html';
+                resetDataBtn.disabled = true; // Nonaktifkan tombol Reset
                 
                 allVisitorsData = [];
                 updateVisitorList();
-                visitorsRef.off('value');
+                visitorsRef.off('value'); // Hentikan mendengarkan perubahan Firebase
             }
         });
 
+        /**
+         * Fungsi untuk menginisialisasi listener data Firebase.
+         * Dipanggil hanya setelah pengguna terautentikasi.
+         */
         function initializeDataListeners() {
+            // Pastikan listener hanya di-attach sekali (visitorsRef.off() akan melepas listener sebelumnya)
+            visitorsRef.off('value'); 
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
@@ -339,10 +414,13 @@
                 updateVisitorList();
             }, (error) => {
                 console.error("Firebase Read Error:", error);
-                visitorListBody.innerHTML = `<tr><td colspan="4" class="text-red-600 text-center p-5">Gagal memuat data pengunjung: ${error.message}. Pastikan Anda sudah login dan memiliki izin baca.</td></tr>`;
+                visitorListBody.innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Gagal memuat data pengunjung: ${error.message}. Pastikan Anda sudah login dan memiliki izin baca.</td></tr>`;
             });
         }
 
+        /**
+         * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
+         */
         function updateVisitorList() {
             let filteredVisitors = [...allVisitorsData];
 
@@ -396,7 +474,9 @@
                 const cell = noDataRow.insertCell(0);
                 cell.colSpan = 4;
                 cell.textContent = "Tidak ada data pengunjung yang cocok.";
-                cell.className = "text-center text-gray-500 p-5";
+                cell.style.textAlign = "center";
+                cell.style.padding = "20px";
+                cell.style.color = "#888";
                 return;
             }
 
@@ -474,57 +554,43 @@
         /**
          * Fungsi untuk mereset/mengosongkan semua data pengunjung dari Firebase.
          */
-        function resetVisitorsData() {
+        function resetVisitorsData() { // Nama fungsi baru
+            console.log("DEBUG: Tombol Reset Data diklik."); 
+
             if (!isUserAuthenticated) {
-                showConfirmationModal("Anda harus login untuk mereset data. Mengalihkan ke halaman login...", () => {
-                    window.location.href = window.location.origin + '/absen-haflah/login.html';
-                }, false); // Pastikan input kalimat sakti tidak ditampilkan jika belum login
+                console.warn("DEBUG: Reset Data: Pengguna tidak terautentikasi.");
+                showConfirmationModal("Anda harus login untuk mereset data. Mohon login terlebih dahulu.", () => {
+                    window.location.href = 'login.html';
+                });
                 return;
             }
 
-            // Tampilkan modal dengan input kalimat sakti
-            showConfirmationModal(
-                "Masukkan kalimat sakti untuk mengkonfirmasi reset data. Tindakan ini tidak dapat dibatalkan!", 
-                (confirmed) => {
-                    if (confirmed) {
-                        resetLoadingMessage.textContent = "Sedang mereset data...";
-                        resetLoadingMessage.classList.remove('hidden');
-                        resetDataBtn.disabled = true;
-                        resetDataBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-                        visitorsRef.set({})
-                            .then(() => {
-                                resetLoadingMessage.textContent = "Data berhasil direset!";
-                                resetLoadingMessage.classList.add('text-green-600');
-                                setTimeout(() => {
-                                    hideConfirmationModal();
-                                    resetDataBtn.disabled = false;
-                                    resetDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                }, 2000); 
-                            })
-                            .catch((error) => {
-                                console.error("Firebase Reset Error:", error);
-                                resetLoadingMessage.textContent = `Gagal mereset data: ${error.message}`;
-                                resetLoadingMessage.classList.add('text-red-600');
-                                setTimeout(() => {
-                                    hideConfirmationModal();
-                                    resetDataBtn.disabled = false;
-                                    resetDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                                }, 5000);
-                            });
-                    } else {
-                        console.log("Reset dibatalkan oleh pengguna.");
-                        // Sembunyikan loading jika dibatalkan setelah modal konfirmasi
-                        resetLoadingMessage.classList.add('hidden');
-                        resetDataBtn.disabled = false;
-                        resetDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                },
-                true // Set ke true untuk menampilkan input kalimat sakti
-            );
+            showConfirmationModal("Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
+                if (confirmed) {
+                    console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
+                    visitorsRef.set({}) // Mengatur node 'pengunjung' menjadi objek kosong
+                        .then(() => {
+                            console.log("DEBUG: Firebase Reset: Data berhasil direset di Realtime Database.");
+                            // Karena kita menggunakan listener 'value', allVisitorsData akan otomatis kosong
+                            // dan updateVisitorList() akan dipicu otomatis.
+                            showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
+                            setTimeout(() => hideConfirmationModal(), 2000); 
+                        })
+                        .catch((error) => {
+                            console.error("DEBUG: Firebase Reset Error:", error);
+                            if (error.code === "PERMISSION_DENIED") {
+                                showConfirmationModal(`Gagal mereset data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
+                            } else {
+                                showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
+                            }
+                        });
+                } else {
+                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna.");
+                }
+            });
         }
 
-        resetDataBtn.addEventListener('click', resetVisitorsData);
+        resetDataBtn.addEventListener('click', resetVisitorsData); // Event listener baru
     </script>
 </body>
 </html>
