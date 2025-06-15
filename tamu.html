@@ -82,9 +82,9 @@
         #exportExcelBtn:hover {
             background-color: #218838;
         }
-        /* Styling untuk tombol Reset Data */
-        #resetDataBtn {
-            background-color: #ffc107;
+        /* Styling untuk tombol Clear Data (diganti jadi Reset Data) */
+        #resetDataBtn { /* ID baru */
+            background-color: #ffc107; /* Warna kuning/oranye untuk Reset */
             color: #333;
             box-shadow: 0 2px 5px rgba(255,193,7,0.2);
         }
@@ -201,18 +201,8 @@
             margin-bottom: 25px;
             color: #333;
         }
-        /* Hapus styling untuk input password karena tidak lagi digunakan */
-        /* .modal-input-group { ... } */
-        /* .modal-input-group label { ... } */
-        /* .modal-input-group input { ... } */
-        /* .modal-input-group .error-text { ... } */
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
         .modal-buttons button {
-            margin: 0;
+            margin: 0 10px;
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
@@ -221,7 +211,7 @@
             transition: background-color 0.2s ease;
         }
         .modal-buttons .btn-yes {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Merah untuk Yes */
             color: white;
             border: none;
         }
@@ -229,7 +219,7 @@
             background-color: #c82333;
         }
         .modal-buttons .btn-no {
-            background-color: #6c757d;
+            background-color: #6c757d; /* Abu-abu untuk No */
             color: white;
             border: none;
         }
@@ -259,7 +249,7 @@
             </select>
         </div>
         <button id="exportExcelBtn">Export ke Excel (CSV)</button>
-        <button id="resetDataBtn">Reset Data Pengunjung</button>
+        <button id="resetDataBtn">Reset Data Pengunjung</button> <!-- ID dan teks baru -->
     </div>
 
     <table id="visitor-list">
@@ -268,7 +258,7 @@
                 <th>No.</th>
                 <th data-sort="nama">Nama Pengunjung</th>
                 <th data-sort="kelas">Kelas</th>
-                <th>Waktu Scan</th>
+                <th data-sort="timestamp">Waktu Scan</th>
             </tr>
         </thead>
         <tbody>
@@ -280,10 +270,6 @@
     <div id="confirmationModal" class="modal-overlay">
         <div class="modal-content">
             <p id="modalMessage"></p>
-            
-            <!-- Input Password Dihapus dari sini -->
-            <!-- <div id="passwordInputGroup" class="modal-input-group">...</div> -->
-
             <div class="modal-buttons">
                 <button class="btn-yes" id="modalConfirmYes">Ya</button>
                 <button class="btn-no" id="modalConfirmNo">Tidak</button>
@@ -314,7 +300,7 @@
         const searchFilterInput = document.getElementById('searchFilter');
         const sortBySelect = document.getElementById('sortBy');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const resetDataBtn = document.getElementById('resetDataBtn');
+        const resetDataBtn = document.getElementById('resetDataBtn'); // ID baru untuk tombol reset
 
         let allVisitorsData = [];
         let currentSortColumn = 'timestamp';
@@ -324,27 +310,22 @@
         const modalMessage = document.getElementById('modalMessage');
         const modalConfirmYes = document.getElementById('modalConfirmYes');
         const modalConfirmNo = document.getElementById('modalConfirmNo');
-        // Elemen password modal dihapus:
-        // const passwordInputGroup = document.getElementById('passwordInputGroup');
-        // const modalPasswordInput = document.getElementById('modalPassword');
-        // const passwordErrorSpan = document.getElementById('passwordError');
-
         let confirmationCallback = null;
+
         let isUserAuthenticated = false;
 
         /**
          * Menampilkan modal konfirmasi kustom.
          * @param {string} message - Pesan yang akan ditampilkan di modal.
          * @param {function} callback - Fungsi yang akan dipanggil jika pengguna mengklik 'Ya'.
-         * // Parameter showPasswordInput dihapus.
          */
         function showConfirmationModal(message, callback) {
+            console.log("DEBUG: showConfirmationModal dipanggil. Pesan:", message);
             modalMessage.textContent = message;
-            confirmationCallback = callback;
-
-            // Logika untuk menampilkan/menyembunyikan passwordInputGroup dihapus.
+            confirmationCallback = callback; // Simpan callback di variabel global
 
             // Pasang event listener menggunakan metode addEventListener
+            // Pastikan tidak ada duplikasi listener
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmYes.addEventListener('click', modalYesHandler);
             
@@ -358,51 +339,68 @@
          * Menyembunyikan modal konfirmasi kustom.
          */
         function hideConfirmationModal() {
+            console.log("DEBUG: hideConfirmationModal dipanggil.");
             confirmationModal.classList.remove('visible');
-            confirmationCallback = null;
-            // Logika untuk menyembunyikan dan membersihkan passwordInputGroup dihapus.
-
             // Hapus event listener saat modal disembunyikan untuk menghindari duplikasi
             modalConfirmYes.removeEventListener('click', modalYesHandler);
             modalConfirmNo.removeEventListener('click', modalNoHandler);
+            confirmationCallback = null; // Set callback ke null setelah digunakan atau disembunyikan
         }
 
-        // Fungsi handler untuk tombol 'Ya' di modal (kembali ke logika awal tanpa password)
-        function modalYesHandler() { // Menjadi synchronous lagi
-            // Logika verifikasi password dihapus
-            hideConfirmationModal();
-            if (confirmationCallback) {
-                confirmationCallback(true);
+        // --- HANDLER FUNCTIONS FOR MODAL BUTTONS ---
+        // Fungsi ini akan dieksekusi saat tombol 'Ya' diklik
+        function modalYesHandler() {
+            console.log("DEBUG: Modal 'Ya' button diklik (handler).");
+            // Ambil callback sebelum memanggil hideConfirmationModal yang mungkin menyetelnya ke null
+            const currentCallback = confirmationCallback; 
+            hideConfirmationModal(); // Sembunyikan modal
+            if (currentCallback) {
+                console.log("DEBUG: Memanggil confirmationCallback (Ya).");
+                currentCallback(true); // Panggil callback dengan true
+            } else {
+                console.warn("DEBUG: confirmationCallback (Ya) tidak ditemukan atau null.");
             }
         }
 
-        // Fungsi handler untuk tombol 'Tidak' di modal
+        // Fungsi ini akan dieksekusi saat tombol 'Tidak' diklik
         function modalNoHandler() {
+            console.log("DEBUG: Modal 'Tidak' button diklik (handler).");
+            const currentCallback = confirmationCallback;
             hideConfirmationModal();
-            if (confirmationCallback) {
-                confirmationCallback(false);
+            if (currentCallback) {
+                console.log("DEBUG: Memanggil confirmationCallback (Tidak).");
+                currentCallback(false);
+            } else {
+                console.warn("DEBUG: confirmationCallback (Tidak) tidak ditemukan atau null.");
             }
         }
+        // --- END HANDLER FUNCTIONS ---
 
         auth.onAuthStateChanged(user => {
             if (user) {
                 console.log("Auth Status: User logged in as", user.email);
                 isUserAuthenticated = true;
                 initializeDataListeners();
-                resetDataBtn.disabled = false;
+                resetDataBtn.disabled = false; // Aktifkan tombol Reset
             } else {
                 console.log("Auth Status: No user logged in. Redirecting to login page.");
                 isUserAuthenticated = false;
                 window.location.href = 'login.html';
-                resetDataBtn.disabled = true;
+                resetDataBtn.disabled = true; // Nonaktifkan tombol Reset
                 
                 allVisitorsData = [];
                 updateVisitorList();
-                visitorsRef.off('value');
+                visitorsRef.off('value'); // Hentikan mendengarkan perubahan Firebase
             }
         });
 
+        /**
+         * Fungsi untuk menginisialisasi listener data Firebase.
+         * Dipanggil hanya setelah pengguna terautentikasi.
+         */
         function initializeDataListeners() {
+            // Pastikan listener hanya di-attach sekali (visitorsRef.off() akan melepas listener sebelumnya)
+            visitorsRef.off('value'); 
             visitorsRef.on('value', (snapshot) => {
                 const visitorsObject = snapshot.val();
                 allVisitorsData = [];
@@ -420,6 +418,9 @@
             });
         }
 
+        /**
+         * Memperbarui tabel pengunjung berdasarkan filter dan sortir yang aktif.
+         */
         function updateVisitorList() {
             let filteredVisitors = [...allVisitorsData];
 
@@ -553,45 +554,43 @@
         /**
          * Fungsi untuk mereset/mengosongkan semua data pengunjung dari Firebase.
          */
-        function resetVisitorsData() {
+        function resetVisitorsData() { // Nama fungsi baru
+            console.log("DEBUG: Tombol Reset Data diklik."); 
+
             if (!isUserAuthenticated) {
+                console.warn("DEBUG: Reset Data: Pengguna tidak terautentikasi.");
                 showConfirmationModal("Anda harus login untuk mereset data. Mohon login terlebih dahulu.", () => {
                     window.location.href = 'login.html';
                 });
                 return;
             }
 
-            // Tampilkan modal TANPA input password
-            showConfirmationModal(
-                "Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", 
-                (confirmed) => {
-                    if (confirmed) {
-                        // Logika reset data akan berjalan DI SINI setelah konfirmasi
-                        visitorsRef.set({})
-                            .then(() => {
-                                allVisitorsData = [];
-                                updateVisitorList();
-                                showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
-                                setTimeout(() => hideConfirmationModal(), 2000); 
-                            })
-                            .catch((error) => {
-                                console.error("Firebase Reset Error:", error);
-                                if (error.code === "PERMISSION_DENIED") {
-                                    showConfirmationModal(`Gagal mereset data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
-                                } else {
-                                    showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
-                                }
-                            });
-                    } else {
-                        // Pengguna membatalkan reset
-                        console.log("Firebase Reset: Reset dibatalkan oleh pengguna.");
-                    }
+            showConfirmationModal("Apakah Anda yakin ingin MERESET semua data pengunjung? Ini akan mengosongkan daftar. Tindakan ini tidak dapat dibatalkan!", (confirmed) => {
+                if (confirmed) {
+                    console.log("DEBUG: Mencoba mereset data di Firebase Realtime Database...");
+                    visitorsRef.set({}) // Mengatur node 'pengunjung' menjadi objek kosong
+                        .then(() => {
+                            console.log("DEBUG: Firebase Reset: Data berhasil direset di Realtime Database.");
+                            // Karena kita menggunakan listener 'value', allVisitorsData akan otomatis kosong
+                            // dan updateVisitorList() akan dipicu otomatis.
+                            showConfirmationModal("Semua data pengunjung berhasil direset!", () => {});
+                            setTimeout(() => hideConfirmationModal(), 2000); 
+                        })
+                        .catch((error) => {
+                            console.error("DEBUG: Firebase Reset Error:", error);
+                            if (error.code === "PERMISSION_DENIED") {
+                                showConfirmationModal(`Gagal mereset data: Izin ditolak. Pastikan Anda sudah login dan aturan Firebase Anda mengizinkan penulisan (write) ke 'pengunjung'.`, () => {});
+                            } else {
+                                showConfirmationModal(`Gagal mereset data: ${error.message}`, () => {});
+                            }
+                        });
+                } else {
+                    console.log("DEBUG: Firebase Reset: Reset dibatalkan oleh pengguna.");
                 }
-                // Parameter true untuk showPasswordInput dihapus
-            );
+            });
         }
 
-        resetDataBtn.addEventListener('click', resetVisitorsData);
+        resetDataBtn.addEventListener('click', resetVisitorsData); // Event listener baru
     </script>
 </body>
 </html>
