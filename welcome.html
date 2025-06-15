@@ -35,12 +35,11 @@
         .main-frame-container {
             background-color: #f7f3e9; /* Warna dasar krem/emas terang */
             /* Menggunakan URL pattern yang diunggah ke repository Anda */
-            background-image: url('pattern.png'); /* DIUBAH: Menggunakan pattern.png */
+            background-image: url('pattern.png'); /* GANTI 'pattern.png' DENGAN NAMA FILE ASLI ANDA */
             background-repeat: repeat; /* Mengulang pattern */
-            /* Border tebal warna emas tua */
-            border: 15px solid #a87e35; 
-            /* Placeholder untuk border motif - pastikan URL gambar border Anda di sini */
-            border-image: url('https://placehold.co/30x30/a87e35/ffffff?text=BORDER') 30 round; 
+            /* Border telah dihapus */
+            /* border-image juga dihapus */
+
             /* Hilangkan box-shadow di mode fullscreen untuk tampilan yang lebih bersih */
             box-shadow: none; 
             /* Hilangkan border-radius untuk mengisi sudut layar sepenuhnya */
@@ -59,6 +58,8 @@
             justify-content: center; /* Perubahan untuk memusatkan secara vertikal */
             align-items: center;
             gap: 30px; /* Tambahkan jarak antar item flex (header, logo, welcome-message) */
+
+            position: relative; /* Penting untuk penempatan footer-signature */
         }
 
         /* Bagian atas (HAFLAH IKHTITAM, SD PLUS 2, Tanggal) */
@@ -175,6 +176,18 @@
             }
         }
 
+        /* Styling untuk tanda tangan footer */
+        #footer-signature {
+            position: absolute; /* Posisikan secara absolut terhadap parent (main-frame-container) */
+            bottom: 20px; /* Jarak dari bawah */
+            right: 20px; /* Jarak dari kanan */
+            font-size: 0.9em; /* Ukuran font lebih kecil */
+            color: #8b6e3e; /* Warna teks emas yang lebih lembut */
+            font-weight: 500;
+            opacity: 0.7; /* Sedikit transparan */
+        }
+
+
         /* Media queries untuk responsivitas */
         @media (max-width: 1024px) { /* Untuk tablet landscape dan desktop kecil */
             .header-section .title-main { font-size: 2em; }
@@ -185,23 +198,39 @@
         }
 
         @media (max-width: 768px) { /* Untuk tablet portrait */
-            .main-frame-container { padding: 25px; }
+            .main-frame-container { 
+                padding: 25px; 
+                gap: 20px; /* Kurangi gap */
+            }
             .header-section .title-main { font-size: 1.8em; }
             .header-section .title-sub { font-size: 1.2em; }
             .logo-container img { max-height: 100px; }
             #greeting { font-size: 2.2em; }
             .welcome-phrase { font-size: 1.5em; }
             #visitor-name-display { font-size: 3em; }
+            #footer-signature {
+                font-size: 0.8em;
+                bottom: 15px;
+                right: 15px;
+            }
         }
 
         @media (max-width: 480px) { /* Untuk smartphone */
-            .main-frame-container { padding: 15px; }
+            .main-frame-container { 
+                padding: 15px; 
+                gap: 15px; /* Kurangi gap lagi */
+            }
             .header-section .title-main { font-size: 1.5em; }
             .header-section .title-sub { font-size: 1em; }
             .logo-container img { max-height: 80px; }
             #greeting { font-size: 1.5em; }
             .welcome-phrase { font-size: 1.2em; }
             #visitor-name-display { font-size: 2.2em; }
+            #footer-signature {
+                font-size: 0.7em;
+                bottom: 10px;
+                right: 10px;
+            }
         }
     </style>
 </head>
@@ -223,6 +252,11 @@
             <div id="greeting">Assalamualaikum</div>
             <div class="welcome-phrase">Selamat datang orang tua Ananda</div>
             <div id="visitor-name-display"></div> <!-- Nama pengunjung akan muncul di sini -->
+        </div>
+
+        <!-- Tanda Tangan Footer Baru -->
+        <div id="footer-signature">
+            Build with love Haris Ratno Pambudi
         </div>
     </div>
 
