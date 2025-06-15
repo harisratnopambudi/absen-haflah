@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Code Scanner - Absen Tamu</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-database.js"></script>
+</head>
+<body>
+  <h1>Scan QR Tamu</h1>
+  <div id="reader" style="width:300px;"></div>
+
+  <script>
+    // Firebase Config
+    var firebaseConfig = {
+      apiKey: "AIzaSyCMNdxvmAhrKgfwKNzPmSlfFtrbhlawYXE",
+      authDomain: "absen-tamu-undangan-haflah.firebaseapp.com",
+      databaseURL: "https://absen-tamu-undangan-haflah-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "absen-tamu-undangan-haflah",
+      storageBucket: "absen-tamu-undangan-haflah.appspot.com",
+      messagingSenderId: "298086025599",
+      appId: "1:298086025599:web:42f92cc7dd8cab7423724a",
+      measurementId: "G-6KVLTT6WC5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    // Proses scan
+    function onScanSuccess(decodedText) {
+      let url = new URL(decodedText);
+      let id = url.searchParams.get("id");
+
+      if (id) {
+        database.ref('absen/' + id).update({
+          status: "Hadir",
+          waktu: new Date().toLocaleString()
+        }).then(() => {
+          alert('Absen berhasil untuk ID: ' + id);
+        });
+      }
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(onScanSuccess);
+  </script>
+</body>
+</html>
